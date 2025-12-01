@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cost of Living & Savings Calculator</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      label { display: block; margin-top: 0.5rem; }
+      input { padding: 0.3rem; width: 250px; }
+      .row { margin-bottom: 0.5rem; }
+      .card { border: 1px solid #ddd; padding: 1rem; border-radius: 8px; margin-top: 1rem; max-width: 600px;}
+      .error { color: #b00020; margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Cost of Living & Savings Calculator</h1>
+
+    <form method="post" action="/compare">
+      <div class="row"><strong>From city</strong></div>
+      <label>Country 1: <input name="country1" value="Malaysia" /></label>
+      <label>City 1:    <input name="city1" value="Kuala Lumpur" /></label>
+
+      <div class="row"><strong>To city</strong></div>
+      <label>Country 2: <input name="country2" value="Singapore" /></label>
+      <label>City 2:    <input name="city2" value="Singapore" /></label>
+
+      <div class="row"><strong>Income</strong></div>
+      <label>Current net salary (per month):
+        <input type="number" step="0.01" name="net_home" value="11000" />
+      </label>
+      <label>New net salary (optional):
+        <input type="number" step="0.01" name="net_new" />
+      </label>
+      <label>or expected increase % (optional):
+        <input type="number" step="0.1" name="increment_pct" />
+      </label>
+
+      <div class="row">
+        <button type="submit">Compare</button>
+      </div>
+    </form>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+      <div class="card">
+        <h2>Indices difference</h2>
+        <p>
+          Cost of living (excl. rent) in
+          <strong>{{ result.cities.city_to }}</strong> is
+          <strong>{{ '%.1f'|format(result.cities.col_excl_rent.valuePct|abs) }}%
+          {{ result.cities.col_excl_rent.direction }}</strong> than in
+          <strong>{{ result.cities.city_from }}</strong>.
+        </p>
+        <p>
+          Rent in <strong>{{ result.cities.city_to }}</strong> is
+          <strong>{{ '%.1f'|format(result.cities.rent.valuePct|abs) }}%
+          {{ result.cities.rent.direction }}</strong> than in
+          <strong>{{ result.cities.city_from }}</strong>.
+        </p>
+
+        <h2>Savings estimate</h2>
+        <p>
+          In {{ result.cities.city_from }}, with net
+          <strong>{{ '%.0f'|format(result.model.net_home) }}</strong>,
+          estimated savings ≈
+          <strong>{{ '%.0f'|format(result.model.savings_home) }}</strong>/month.
+        </p>
+        <p>
+          In {{ result.cities.city_to }}, with net
+          <strong>{{ '%.0f'|format(result.model.net_new) }}</strong>,
+          estimated savings ≈
+          <strong>{{ '%.0f'|format(result.model.savings_new) }}</strong>/month.
+        </p>
+        {% if result.model.equiv_net_new_for_same_savings %}
+          <p>
+            To keep the <em>same</em> savings as at home, you’d need about
+            <strong>{{ '%.0f'|format(result.model.equiv_net_new_for_same_savings) }}</strong>
+            net per month in {{ result.cities.city_to }}.
+          </p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </body>
+</html>
