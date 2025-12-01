@@ -1,4 +1,4 @@
-def compute_model(net_home, net_new, col_excl_rent, rent):
+def calculate_stats(net_home, net_new, col_excl_rent, rent):
     w_rent = 0.3
     w_non_rent = 0.5
 
@@ -17,6 +17,8 @@ def compute_model(net_home, net_new, col_excl_rent, rent):
     equiv = savings_home / denom if denom > 0 else None
 
     return {
+        "net_home": net_home,
+        "net_new": net_new,
         "rent_home": rent_home,
         "non_rent_home": non_rent_home,
         "savings_home": savings_home,

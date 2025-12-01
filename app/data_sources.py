@@ -12,8 +12,8 @@ USER_AGENT = (
 )
 
 
-def load_city_differences(text: str):
-    m = re.search(r"is\s+([\d.]+)%\s+(higher|lower)\s+than", text, re.I)
+def extract_city_differences(text: str):
+    m = re.search(r"(?:is|are)\s+([\d.]+)%\s+(higher|lower)\s+than", text, re.I)
     if not m:
         raise ValueError(f"Could not parse diff: {text}")
 
@@ -24,14 +24,12 @@ def load_city_differences(text: str):
     return {"valuePct": signed, "direction": direction}
 
 
-async def scrape_diffs(country1, city1, country2, city2, amount=11000, displayCurrency="MYR"):
+async def get_percentage_diff(country1: str, city1: str, country2: str, city2: str):
     params = dict(
         country1=country1,
         city1=city1,
         country2=country2,
-        city2=city2,
-        amount=str(amount),
-        displayCurrency=displayCurrency,
+        city2=city2
     )
 
     async with httpx.AsyncClient(timeout=15) as client:
@@ -50,16 +48,18 @@ async def scrape_diffs(country1, city1, country2, city2, amount=11000, displayCu
     col_excl_rent = None
     rent = None
 
-    for tr in table.select("tbody tr"):
+    idx_iter = 0
+    for tr in table.find_all("tr"):
         td = tr.find("td")
         if not td:
             continue
+        idx_iter += 1
         text = " ".join(td.get_text(strip=True, separator=" ").split())
 
         if text.startswith("Cost of Living in "):
-            col_excl_rent = extract_diff(text)
+            col_excl_rent = extract_city_differences(text)
         elif text.startswith("Rent Prices in "):
-            rent = extract_diff(text)
+            rent = extract_city_differences(text)
 
     if not col_excl_rent or not rent:
         raise RuntimeError("Unable to extract COL or rent differences.")
