@@ -1,0 +1,19 @@
+[project]
+name = "relo-calculator"
+version = "0.1.0"
+description = "Cost of living comparison + savings estimator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "httpx",
+    "beautifulsoup4",
+    "python-multipart>=0.0.20",
+]
+
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
