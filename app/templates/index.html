@@ -154,6 +154,16 @@
       }
       .loc-tag.to { color: var(--muted); }
       .loc-note { font-size: .75rem; color: var(--muted); margin-top: .6rem; }
+
+      .site-footer {
+        text-align: center;
+        margin-top: 2rem;
+        font-size: .78rem;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .site-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+      .site-footer a:hover { text-decoration: underline; }
       @media (max-width: 500px) {
         .loc-row { grid-template-columns: 1fr 1fr; }
         .loc-tag { grid-column: 1 / -1; padding-bottom: 0; }
@@ -796,6 +806,12 @@
         {% endif %}{# result.model #}
 
       {% endif %}
+
+      <footer class="site-footer">
+        Made by
+        <a href="https://github.com/sabilmakbar" target="_blank" rel="noopener noreferrer">@sabilmakbar</a>
+        with good intentions · estimates only, not financial advice.
+      </footer>
 
     </div>
 
