@@ -118,33 +118,38 @@ docker run -p 8000:8000 relo-calculator
 
 ## Testing
 
-The suite uses `pytest` with `pytest-asyncio`; network calls (Numbeo, Yahoo Finance) are mocked via `respx` and monkeypatching — no live requests.
+The suite uses `pytest` with `pytest-asyncio`; network calls (Numbeo, Yahoo, Frankfurter, currency-api) are mocked via `respx` and monkeypatching — no live requests.
 
 ```bash
-uv sync --group dev          # install test dependencies
+uv sync --group dev          # install test + audit dependencies
 uv run pytest                # run the suite
 uv run pytest --cov          # run with a coverage report
 uv run pytest --cov --cov-report=html   # HTML report in htmlcov/
+uv run pip-audit             # scan dependencies for known CVEs
 ```
 
-### Coverage
+### Layers & coverage
 
-Latest run — **80 tests, 92% line coverage**:
+Latest run — **111 tests, 93% line coverage**, spanning four layers:
 
-| Module | Coverage | Notes |
+| Layer | File | Focus |
 |---|---|---|
-| `app/currencies.py` | 100% | country → currency / capital (loaded from `data/*.json`) |
-| `app/fx.py` | 96% | EMA math, 3-source fetch/fallback, blend renormalisation, spot cache |
-| `app/model.py` | 96% | savings model + savings-target solver |
-| `app/data_sources.py` | 96% | Numbeo scrape + error paths |
-| `app/main.py` | 86% | endpoints + validation (uncovered: rare HTTP error branches) |
-| **Total** | **92%** | |
+| Unit | `test_model/fx/currencies/data_sources.py` | Model math, EMA blend, lookups, parsing |
+| Integration | `test_integration.py` | Full request → model → render pipeline |
+| Regression | `test_regression.py` | Pins previously-fixed bugs |
+| Security | `test_security.py` | Validation, XSS escaping, SSRF resistance |
+| Endpoint | `test_app.py` | Routes, validation, degradation |
 
-What's covered:
-- **Unit** — EMA correctness, currency mapping, the savings model, and a round-trip check that the savings-target solver reproduces the requested % delta across FX rates.
-- **Parsing** — Numbeo HTML (higher/lower/unknown-city/missing-table), Yahoo payloads (full/short/empty windows), and Frankfurter series.
-- **Resilience** — Yahoo retry/host-fallback, fallback to Frankfurter on 429/empty, and `FxUnavailable` when all sources fail.
-- **Endpoints** — same-country vs. cross-country flows, savings-target derivation, input validation, the unknown-currency warning, and graceful FX-failure degradation.
+| Module | Coverage |
+|---|---|
+| `app/currencies.py` | 100% |
+| `app/fx.py` | 96% |
+| `app/model.py` | 96% |
+| `app/data_sources.py` | 96% |
+| `app/main.py` | ~86% (uncovered: rare HTTP error branches) |
+| **Total** | **93%** |
+
+See [SECURITY_TEST.md](SECURITY_TEST.md) for the security review — findings rated by CVSS band and mapped to the OWASP Top 10. The dependency audit is clean after upgrading `python-multipart` / `starlette` / `idna` / `python-dotenv` (14 CVEs resolved).
 
 ---
 
