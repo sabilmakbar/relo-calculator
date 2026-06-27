@@ -1,59 +1,98 @@
 # relo-calculator
 
-A personal tool for estimating whether a relocation offer is financially worth it — comparing cost of living and projected monthly savings between two cities.
+A personal tool for estimating whether a relocation offer is financially worth it — comparing cost of living, exchange rates, and projected monthly savings between two cities.
 
 ## How it works
 
 ### App flow
 
 ```
-User fills form
+User fills form (countries, cities, salary)
     │
     ▼
 POST /compare
     │
-    ├─► data_sources.py
-    │       Hits Numbeo's compare_cities page for the two cities,
-    │       scrapes the HTML diff table to extract two signed percentages:
-    │         • Cost of Living (excl. rent): how much more/less expensive daily life is
-    │         • Rent Prices: how much more/less rent is
+    ├─► currencies.py
+    │       Infers the ISO 4217 currency for each country
+    │       (Malaysia → MYR, Singapore → SGD). No manual input.
+    │
+    ├─► data_sources.py   ┐
+    │       Scrapes Numbeo │ run concurrently
+    │       cost/rent diffs│ (asyncio.gather)
+    │                      │
+    └─► fx.py              ┘
+    │       If cross-currency, fetches ~200d of daily rates from
+    │       Yahoo Finance and computes EMA-30/60/180 as a
+    │       next-month rate forecast (+ a sensitivity band).
     │
     └─► model.py
             Applies a fixed budget model to your salary:
-              30% → rent
-              50% → other living costs
-              20% → savings (remainder)
-            Scales each bucket by the Numbeo percentages to estimate
-            what you'd actually save per month in the new city.
-            Also computes the break-even salary: the minimum you'd need
-            in the new city to match your current savings rate.
+              30% → rent · 50% → other living costs · 20% → savings
+            Scales costs by the Numbeo percentages (FX-adjusted for
+            cross-country moves) to estimate monthly savings, the
+            savings delta vs. home, and the break-even salary.
 ```
 
 ### What you input
 
 | Field | Required | Notes |
 |---|---|---|
-| Country 1 / City 1 | Yes | Your current location |
-| Country 2 / City 2 | Yes | Where you're considering moving |
-| Current net salary | Yes | Monthly take-home, any currency |
-| New net salary | One of these | Direct offer amount |
-| Expected increase % | One of these | Applied to current salary |
+| From Country / City | Yes | Country is a **dropdown**; selecting one auto-fills the city with its capital (editable). City is otherwise free text |
+| To Country / City | Yes | Where you're considering moving |
+| Current net salary | Yes | Monthly take-home, in home currency (label shows the inferred code) |
+| New net salary | One of these | Offer amount, **in destination currency** |
+| Expected increase % of savings | One of these | Target savings growth vs. now; the app back-solves the salary needed |
+| Savings rate (slider + number) | No | % of income saved (default 20%) |
+| Rent share (slider + number) | No | Rent's % of the **remaining** spend; the complement is other living costs (default 25%) |
+
+> Country is a dropdown because the supported set is finite (it drives currency inference). The country→currency and country→capital data live in [`app/data/`](app/data/) as JSON (`currency_by_country.json`, `capital_city.json`). Cities stay free text — there's no reliable offline list of Numbeo cities to populate a dropdown from. Submitted form values persist across submits, and all monetary figures (inputs and results) render with thousand separators.
+
+Currencies are **inferred automatically** from the country names — no need to type currency codes. Cross-country comparisons trigger an FX lookup; same-country (or same-currency) comparisons skip it.
+
+The two budget sliders show a **live breakdown** (savings / rent / other-living amounts) as you drag, based on the current salary — no submit needed.
 
 ### What you get
 
-- How much more/less expensive daily life and rent are in the destination (sourced from Numbeo)
-- Estimated monthly savings at home vs. destination
+- How much more/less expensive daily life and rent are in the destination (Numbeo)
+- **FX prediction** for next month (EMA-30) with a sensitivity band, shown both directions
+- Estimated monthly savings at home vs. destination — in both currencies, plus a % delta
 - The break-even salary needed in the destination to maintain your current savings
+- If you gave a savings target, the destination salary required to hit it
 
 ### Model assumptions
 
-The savings model uses fixed spending weights (in `app/model.py`):
+The budget split is **controlled by two sliders** (defaults match the classic 30/50/20):
 
-- **30%** of net income → rent
-- **50%** of net income → other living costs (food, transport, utilities, etc.)
-- **20%** → savings
+- **Savings rate** — % of net income saved (default 20%)
+- **Rent share** — rent's % of the remaining spend (default 25% → 20% of income); the complement goes to other living costs (food, transport, utilities, etc.)
 
-These are intentionally simple. Adjust `w_rent` and `w_non_rent` in `model.py` to match your actual spending.
+So `savings + rent + other = 100%` of income, always. The weights flow into the model per request; `W_RENT` / `W_NON_RENT` in `model.py` are just the fallback defaults when the sliders aren't sent.
+
+The model assumes you **replicate your home lifestyle** in the new city — each spending bucket is scaled by its own Numbeo index (rent by the Rent index, other costs by the Cost-of-Living-excl-rent index), independently.
+
+### FX prediction
+
+The next-month exchange-rate forecast is a **weighted blend of three EMAs** over the last ~200 trading days:
+
+```
+forecast = 0.3·EMA-30 + 0.3·EMA-90 + 0.4·EMA-180
+```
+
+(renormalised over whatever horizons the history supports). EMA-30 adds recent responsiveness; EMA-180 anchors the long-term trend. The spread across the EMAs forms a sensitivity band, re-run through the model to give a savings range. A green ▲ / red ▼ arrow shows whether the forecast sits above or below the EMA-180 anchor. The whole prediction renders as a single compact line in the UI.
+
+**Data sources** (tried in order, automatic fallback):
+
+1. **Yahoo Finance** — daily history, broadest currency coverage; primary source. The client seeds Yahoo's consent cookies (via `fc.yahoo.com`) and retries across both API hosts to reduce 429s — though IP-based throttling on shared/free hosts can't be fully avoided, which is exactly why the fallbacks exist.
+2. **Frankfurter / ECB** — free, no API key, ~31 major currencies (incl. MYR, SGD); used if Yahoo is unavailable or rate-limited (HTTP 429).
+3. **currency-api (spot)** — free, keyless, ~150 currencies (incl. Gulf currencies like SAR that ECB omits). No daily history, so it yields a **spot rate only** — the card shows the current rate with no EMA forecast. Spot lookups are cached in-process for an hour and are reversible (a cached A→B also answers B→A as 1/rate).
+
+The blend renormalises when history is short: if only some of EMA-30/90/180 are available, their weights (0.3/0.3/0.4) are rescaled proportionally over what's present.
+
+If **all** sources fail, the cost-of-living comparison still renders — only the savings estimate (which needs currency conversion) is skipped, with a clear notice. The active source is shown in the FX card.
+
+> Not TradingView / XE / Wise: none offer a free, keyless public API for rates — TradingView means scraping (against ToS), and XE/Wise require paid or authenticated business accounts. The sources above are the robust free alternatives.
+
+> EMA is a smoothing/trend tool, not a precise forecaster — FX is famously hard to predict and a random walk beats most models. Treat the numbers as a plausible range, not a guarantee. The wider the EMA-30 ↔ EMA-180 gap, the less certain the estimate.
 
 ---
 
@@ -62,12 +101,8 @@ These are intentionally simple. Adjust `w_rent` and `w_non_rent` in `model.py` t
 ### With UV (recommended)
 
 ```bash
-# Install dependencies
-uv sync
-
-# Start dev server
-./run.sh
-# or: uv run uvicorn app.main:app --reload
+uv sync            # install dependencies
+./run.sh           # start dev server (or: uv run uvicorn app.main:app --reload)
 ```
 
 Open [http://localhost:8000](http://localhost:8000).
@@ -81,9 +116,41 @@ docker run -p 8000:8000 relo-calculator
 
 ---
 
+## Testing
+
+The suite uses `pytest` with `pytest-asyncio`; network calls (Numbeo, Yahoo Finance) are mocked via `respx` and monkeypatching — no live requests.
+
+```bash
+uv sync --group dev          # install test dependencies
+uv run pytest                # run the suite
+uv run pytest --cov          # run with a coverage report
+uv run pytest --cov --cov-report=html   # HTML report in htmlcov/
+```
+
+### Coverage
+
+Latest run — **80 tests, 92% line coverage**:
+
+| Module | Coverage | Notes |
+|---|---|---|
+| `app/currencies.py` | 100% | country → currency / capital (loaded from `data/*.json`) |
+| `app/fx.py` | 96% | EMA math, 3-source fetch/fallback, blend renormalisation, spot cache |
+| `app/model.py` | 96% | savings model + savings-target solver |
+| `app/data_sources.py` | 96% | Numbeo scrape + error paths |
+| `app/main.py` | 86% | endpoints + validation (uncovered: rare HTTP error branches) |
+| **Total** | **92%** | |
+
+What's covered:
+- **Unit** — EMA correctness, currency mapping, the savings model, and a round-trip check that the savings-target solver reproduces the requested % delta across FX rates.
+- **Parsing** — Numbeo HTML (higher/lower/unknown-city/missing-table), Yahoo payloads (full/short/empty windows), and Frankfurter series.
+- **Resilience** — Yahoo retry/host-fallback, fallback to Frankfurter on 429/empty, and `FxUnavailable` when all sources fail.
+- **Endpoints** — same-country vs. cross-country flows, savings-target derivation, input validation, the unknown-currency warning, and graceful FX-failure degradation.
+
+---
+
 ## Deploying
 
-The app is a single Docker container with no external dependencies (no database, no secrets). Any platform that runs containers works:
+A single Docker container with no external dependencies (no database, no secrets). Any container platform works:
 
 | Platform | Command |
 |---|---|
@@ -91,13 +158,14 @@ The app is a single Docker container with no external dependencies (no database,
 | Docker Compose | `docker compose up` |
 | Manual VPS | `docker run -d -p 8000:8000 --restart=unless-stopped relo-calculator` |
 
-No environment variables are required.
+No environment variables required.
 
 ---
 
 ## Limitations
 
-- **Numbeo data quality** — indices are crowd-sourced and may lag reality, especially for smaller cities. Missing or mis-named cities will return a parsing error.
-- **Fixed budget weights** — the 30/50/20 split is a rough proxy. Your mileage will vary based on actual lifestyle.
-- **Currency agnostic** — the tool doesn't convert currencies. Use the same currency unit for both salaries.
-- **Scraping dependency** — if Numbeo changes their HTML structure, the scraper breaks. Check the error message if results stop appearing.
+- **Numbeo data quality** — indices are crowd-sourced and may lag reality, especially for smaller cities. Missing or mis-named cities return a clear error.
+- **Fixed budget weights** — the 30/50/20 split is a rough proxy; real spending varies.
+- **FX is a forecast, not a guarantee** — see the FX prediction note above.
+- **Currency coverage** — `currencies.py` maps common countries; an unknown country falls back to no FX conversion (with a warning) rather than failing.
+- **Scraping dependency** — if Numbeo or Yahoo change their structure, the relevant fetch breaks. Errors are surfaced to the user rather than swallowed.
