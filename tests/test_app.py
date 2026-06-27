@@ -101,6 +101,11 @@ def test_cross_country_with_new_salary(patched):
     assert "Other living" in r.text
 
 
+def test_head_root_ok_for_health_check():
+    r = client.head("/")
+    assert r.status_code == 200
+
+
 def test_get_compare_redirects_home():
     r = client.get("/compare", follow_redirects=False)
     assert r.status_code == 303

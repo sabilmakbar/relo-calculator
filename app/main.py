@@ -100,7 +100,8 @@ def _to_amount(label: str, value, required: bool = False):
         raise ValueError(f"{label} must be a number.")
 
 
-@app.get("/", response_class=HTMLResponse)
+# GET for browsers, HEAD so platform health checks (e.g. Render) get a 200.
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def form(request: Request):
     return templates.TemplateResponse(
         request,
