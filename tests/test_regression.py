@@ -68,7 +68,7 @@ def test_get_compare_redirects_not_405():
     """Was: GET /compare returned 405. Now redirects home."""
     r = client.get("/compare", follow_redirects=False)
     assert r.status_code == 303
-    assert r.headers["location"] == "/"
+    assert r.headers["location"] == "/relo"
 
 
 def test_multiword_names_title_cased_not_lowercased(patched):
