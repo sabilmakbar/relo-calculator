@@ -54,10 +54,17 @@ def patched(monkeypatch):
 
 # ── GET / ─────────────────────────────────────────────────────────
 
-def test_home_page_renders():
+def test_landing_page_lists_both_tools():
     r = client.get("/")
     assert r.status_code == 200
-    assert "Relo Calculator" in r.text
+    assert "Relocation Finance Tools" in r.text
+    assert 'href="/relo"' in r.text
+    assert 'href="/tax"' in r.text
+
+
+def test_relo_page_renders():
+    r = client.get("/relo")
+    assert r.status_code == 200
     assert "inferred from countries" in r.text
     assert "increase % of savings" in r.text
     # From / To each render on their own row
@@ -106,10 +113,10 @@ def test_head_root_ok_for_health_check():
     assert r.status_code == 200
 
 
-def test_get_compare_redirects_home():
+def test_get_compare_redirects_to_form():
     r = client.get("/compare", follow_redirects=False)
     assert r.status_code == 303
-    assert r.headers["location"] == "/"
+    assert r.headers["location"] == "/relo"
 
 
 def test_amounts_use_thousand_separators(patched):

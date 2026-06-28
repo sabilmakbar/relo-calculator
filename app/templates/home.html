@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Relocation Finance Tools</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #f5f6fa; --surface: #fff; --border: #e2e5ee; --text: #1a1d2e;
+        --muted: #6b7280; --accent: #4f6ef7; --accent-h: #3a56d4; --accent-bg: #f5f7ff;
+        --shadow: 0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f1117; --surface: #1a1d27; --border: #2b303d; --text: #e6e8ee;
+        --muted: #9aa0ad; --accent: #7b96ff; --accent-h: #6b86ef; --accent-bg: #1b2236;
+        --shadow: 0 1px 4px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0f1117; --surface: #1a1d27; --border: #2b303d; --text: #e6e8ee;
+          --muted: #9aa0ad; --accent: #7b96ff; --accent-h: #6b86ef; --accent-bg: #1b2236;
+          --shadow: 0 1px 4px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+        }
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--bg); color: var(--text); min-height: 100vh;
+        padding: 2rem 1rem 4rem; display: flex; align-items: center;
+      }
+      .page { max-width: 640px; margin: 0 auto; width: 100%; }
+      header { text-align: center; margin-bottom: 2rem; }
+      header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -.5px; }
+      header p { color: var(--muted); margin-top: .4rem; font-size: 1rem; }
+      .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      @media (max-width: 520px) { .tools { grid-template-columns: 1fr; } }
+      .tool-card {
+        display: block; text-decoration: none; color: inherit;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 14px; box-shadow: var(--shadow); padding: 1.6rem;
+        transition: border-color .15s, transform .1s;
+      }
+      .tool-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+      .tool-card .emoji { font-size: 1.8rem; }
+      .tool-card h2 { font-size: 1.1rem; font-weight: 700; margin: .6rem 0 .3rem; }
+      .tool-card p { font-size: .85rem; color: var(--muted); line-height: 1.5; }
+      .tool-card .go { margin-top: .8rem; font-size: .85rem; font-weight: 600; color: var(--accent); }
+      .site-footer { text-align: center; margin-top: 2rem; font-size: .78rem; color: var(--muted); line-height: 1.6; }
+      .site-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+      .site-footer a:hover { text-decoration: underline; }
+      #theme-toggle {
+        position: fixed; top: 1rem; right: 1rem; width: 2.3rem; height: 2.3rem;
+        border-radius: 50%; border: 1px solid var(--border); background: var(--surface);
+        font-size: 1.05rem; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; box-shadow: var(--shadow); z-index: 10;
+      }
+      #theme-toggle:hover { border-color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var t = localStorage.getItem('theme');
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+
+    <button id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+
+    <div class="page">
+      <header>
+        <h1>Relocation Finance Tools</h1>
+        <p>Estimate the money side of moving abroad — pick a tool to start</p>
+      </header>
+
+      <div class="tools">
+        <a class="tool-card" href="/relo">
+          <div class="emoji">🌍</div>
+          <h2>Relocation calculator</h2>
+          <p>Compare cost of living, exchange rates, and projected monthly savings between two cities.</p>
+          <div class="go">Open →</div>
+        </a>
+        <a class="tool-card" href="/tax">
+          <div class="emoji">🧮</div>
+          <h2>Take-home estimator</h2>
+          <p>Rough gross → net (after-tax) estimate by country, using approximate effective rates.</p>
+          <div class="go">Open →</div>
+        </a>
+      </div>
+
+      <footer class="site-footer">
+        Made by
+        <a href="https://github.com/sabilmakbar" target="_blank" rel="noopener noreferrer">@sabilmakbar</a>
+        with good intentions · estimates only, not financial advice.
+      </footer>
+    </div>
+
+    <script>
+      const tt = document.getElementById('theme-toggle');
+      const pd = window.matchMedia('(prefers-color-scheme: dark)');
+      const active = () => document.documentElement.getAttribute('data-theme') || (pd.matches ? 'dark' : 'light');
+      const paint = () => { tt.textContent = active() === 'dark' ? '☀️' : '🌙'; };
+      tt.addEventListener('click', () => {
+        const next = active() === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        paint();
+      });
+      paint();
+    </script>
+  </body>
+</html>

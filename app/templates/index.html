@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Relo Calculator</title>
+    <title>Relocation Calculator</title>
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -154,6 +154,32 @@
       }
       .loc-tag.to { color: var(--muted); }
       .loc-note { font-size: .75rem; color: var(--muted); margin-top: .6rem; }
+
+      .toolnav {
+        display: flex;
+        gap: .4rem;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: .3rem;
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: var(--shadow);
+      }
+      .toolnav a {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+        padding: .4rem .9rem;
+        border-radius: 99px;
+        transition: background .15s, color .15s;
+      }
+      .toolnav a.active { background: var(--accent); color: #fff; }
+      .toolnav a:not(.active):hover { color: var(--accent); }
 
       .site-footer {
         text-align: center;
@@ -493,6 +519,11 @@
         <h1>Relo Calculator</h1>
         <p>Compare cost of living and estimate savings across cities</p>
       </header>
+
+      <nav class="toolnav">
+        <a href="/relo" class="active">Relocation calculator</a>
+        <a href="/tax">Take-home estimator</a>
+      </nav>
 
       <div class="card">
         <div class="card-title">Locations</div>

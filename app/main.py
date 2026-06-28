@@ -18,6 +18,7 @@ from .currencies import (
 from .data_sources import get_percentage_diff
 from .fx import fetch_fx_ema, FxUnavailable
 from .model import calculate_stats, required_net_new_for_savings_increase
+from .tax import estimate_net, TAX_META
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -100,9 +101,14 @@ def _to_amount(label: str, value, required: bool = False):
         raise ValueError(f"{label} must be a number.")
 
 
-# GET for browsers, HEAD so platform health checks (e.g. Render) get a 200.
+# Landing page — choose a tool. GET for browsers, HEAD for health checks.
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
-async def form(request: Request):
+async def home(request: Request):
+    return templates.TemplateResponse(request, "home.html", {})
+
+
+@app.api_route("/relo", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def relo_form(request: Request):
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -113,8 +119,8 @@ async def form(request: Request):
 
 @app.get("/compare")
 async def compare_get():
-    """A direct GET to /compare (refresh, bookmark) has no form data — send home."""
-    return RedirectResponse(url="/", status_code=303)
+    """A direct GET to /compare (refresh, bookmark) has no form data — send to the form."""
+    return RedirectResponse(url="/relo", status_code=303)
 
 
 @app.post("/compare", response_class=HTMLResponse)
@@ -304,4 +310,49 @@ async def compare(
         "index.html",
         {"result": result, "error": error, "ccy_json": CURRENCY_BY_COUNTRY_JSON,
          "cap_json": CAPITAL_BY_COUNTRY_JSON, "form": form_values, "countries": COUNTRIES},
+    )
+
+
+# ── Separate gross → net (take-home) estimator ────────────────────
+
+@app.api_route("/tax", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def tax_form(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "tax.html",
+        {"result": None, "error": None, "countries": COUNTRIES, "tax_meta": TAX_META,
+         "ccy_json": CURRENCY_BY_COUNTRY_JSON, "form": {"country": "", "gross": ""}},
+    )
+
+
+@app.post("/tax", response_class=HTMLResponse)
+async def tax_calc(
+    request: Request,
+    country: str = Form(...),
+    gross: str = Form(...),
+):
+    error = None
+    result = None
+    form_values = {"country": country, "gross": (gross or "").replace(",", "").strip()}
+
+    try:
+        country = _validate_place("Country", country).title()
+        gross_f = _to_amount("Gross salary", gross, required=True)
+        if gross_f <= 0:
+            raise ValueError("Gross salary must be a positive number.")
+
+        est = estimate_net(gross_f, country)
+        if est["rate"] is None:
+            error = f"No tax-rate estimate available for {country}."
+        else:
+            est["currency"] = country_to_currency(country)
+            result = est
+    except ValueError as e:
+        error = str(e)
+
+    return templates.TemplateResponse(
+        request,
+        "tax.html",
+        {"result": result, "error": error, "countries": COUNTRIES, "tax_meta": TAX_META,
+         "ccy_json": CURRENCY_BY_COUNTRY_JSON, "form": form_values},
     )
