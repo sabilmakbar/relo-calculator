@@ -1,6 +1,9 @@
 # relo-calculator
 
-A personal tool for estimating whether a relocation offer is financially worth it — comparing cost of living, exchange rates, and projected monthly savings between two cities.
+**Relocation Finance Tools** — estimate the money side of moving abroad. A landing page (`/`) offers two tools:
+
+- **Relocation calculator** (`/relo`) — compares cost of living, exchange rates, and projected monthly savings between two cities.
+- **Take-home estimator** (`/tax`) — rough gross → net (after-tax) estimate by country.
 
 ## How it works
 
@@ -50,6 +53,10 @@ POST /compare
 Currencies are **inferred automatically** from the country names — no need to type currency codes. Cross-country comparisons trigger an FX lookup; same-country (or same-currency) comparisons skip it.
 
 The two budget sliders show a **live breakdown** (savings / rent / other-living amounts) as you drag, based on the current salary — no submit needed.
+
+### Take-home pay estimator (`/tax`)
+
+A separate page at `/tax` estimates **gross → net** take-home from a flat per-country effective rate ([`app/data/tax_rates.json`](app/data/tax_rates.json)). It's deliberately decoupled from the relocation calculator (which stays net-only and precise). The rates are **approximate, indicative figures with cited provenance** (a `_meta` block in the JSON): OECD members align with the OECD *net personal average tax rate* (Taxing Wages), zero-income-tax jurisdictions per PwC, others rounded from public tax summaries. The page shows the metric, sources, and links to PwC / Numbeo to verify. Real take-home varies with income, deductions, and household, so the relocation calculator still prefers your actual net figure.
 
 ### What you get
 
@@ -130,7 +137,7 @@ uv run pip-audit             # scan dependencies for known CVEs
 
 ### Layers & coverage
 
-Latest run — **111 tests, 93% line coverage**, spanning four layers:
+Latest run — **129 tests, 93% line coverage**, spanning four layers:
 
 | Layer | File | Focus |
 |---|---|---|
