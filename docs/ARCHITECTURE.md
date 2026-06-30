@@ -102,4 +102,4 @@ A separate page estimates **gross → net** take-home from a flat per-country ef
 - **FX is a forecast, not a guarantee** — see above.
 - **Currency coverage** — an unknown country falls back to no FX conversion (with a warning) rather than failing.
 - **Tax estimates are indicative** — flat effective rates, not payroll-grade.
-- **Scraping dependency** — if Numbeo/Yahoo change structure, the relevant fetch breaks; errors are surfaced, not swallowed.
+- **Scraping dependency** — if Numbeo/Yahoo change structure, the relevant fetch breaks; errors are surfaced, not swallowed. The Numbeo fetch sends a full browser header set, primes consent cookies with a warm-up request, speaks HTTP/2, and retries 429/503 with backoff — this clears *soft* throttling, but a hard IP-reputation block (common from datacenter/free-tier hosts) still returns 503. A persistent 503 degrades to a "temporarily unavailable" notice rather than a raw error.

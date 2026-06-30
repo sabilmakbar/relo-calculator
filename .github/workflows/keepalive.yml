@@ -1,0 +1,39 @@
+name: keep-alive
+
+# Pings the deployed app so Render's free tier doesn't spin it down
+# (free services sleep after 15 min idle → ~30-60s cold start on the next hit).
+# Set the target URL once: repo Settings → Secrets and variables → Actions →
+# Variables → New variable, name KEEPALIVE_URL, value https://<your-app>.onrender.com
+#
+# Heads up: GitHub disables scheduled workflows after 60 days of repo inactivity,
+# and cron runs can be delayed under load. For rock-solid uptime use UptimeRobot.
+
+on:
+  schedule:
+    # GitHub cron is UTC-only. Jakarta (WIB) is UTC+7, so the 06:00-12:00 WIB
+    # window maps to 23:00-05:00 UTC, which straddles midnight → three entries.
+    # Every 10 min stays under Render's 15 min idle window.
+    - cron: "*/10 23 * * *"    # 23:00-23:50 UTC = 06:00-06:50 WIB
+    - cron: "*/10 0-4 * * *"   # 00:00-04:50 UTC = 07:00-11:50 WIB
+    - cron: "0 5 * * *"        # 05:00 UTC      = 12:00 WIB (noon, inclusive)
+  workflow_dispatch: {}        # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the app
+        env:
+          URL: ${{ vars.KEEPALIVE_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "KEEPALIVE_URL is not set — add it as a repo Actions variable. Skipping."
+            exit 0
+          fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 --retry 2 -I "$URL")
+          echo "HEAD $URL -> $code"
+          # Render cold starts can briefly 5xx; the ping still woke it, so don't fail the job.
+          case "$code" in
+            2*|3*) echo "awake" ;;
+            *) echo "got $code (likely cold start) — woke it anyway" ;;
+          esac

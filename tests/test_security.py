@@ -7,7 +7,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app.data_sources import URL_BASE, get_percentage_diff
+from app.data_sources import HOME_URL, URL_BASE, get_percentage_diff
 from app.main import app
 
 client = TestClient(app)
@@ -94,6 +94,7 @@ def test_negative_or_zero_salary_rejected(patched):
 
 @respx.mock
 async def test_scraper_only_hits_numbeo_host():
+    respx.get(HOME_URL).mock(return_value=httpx.Response(200))
     route = respx.get(url__startswith=URL_BASE).mock(
         return_value=httpx.Response(200, text="""
         <table class="table_indices_diff">
