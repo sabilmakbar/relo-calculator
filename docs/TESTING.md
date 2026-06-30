@@ -12,7 +12,7 @@ uv run pip-audit             # scan dependencies for known CVEs
 
 ## Layers & coverage
 
-Latest run — **129 tests, 93% line coverage**, spanning four layers:
+Latest run — **131 tests, 93% line coverage**, spanning four layers:
 
 | Layer | File | Focus |
 |---|---|---|

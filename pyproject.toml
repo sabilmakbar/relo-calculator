@@ -8,7 +8,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "jinja2",
-    "httpx",
+    "httpx[http2]",
     "beautifulsoup4",
     "python-multipart>=0.0.31",
 ]
