@@ -10,7 +10,12 @@ name: keep-alive
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # every 10 minutes (under Render's 15 min idle window)
+    # GitHub cron is UTC-only. Jakarta (WIB) is UTC+7, so the 06:00-12:00 WIB
+    # window maps to 23:00-05:00 UTC, which straddles midnight → three entries.
+    # Every 10 min stays under Render's 15 min idle window.
+    - cron: "*/10 23 * * *"    # 23:00-23:50 UTC = 06:00-06:50 WIB
+    - cron: "*/10 0-4 * * *"   # 00:00-04:50 UTC = 07:00-11:50 WIB
+    - cron: "0 5 * * *"        # 05:00 UTC      = 12:00 WIB (noon, inclusive)
   workflow_dispatch: {}        # allow manual runs from the Actions tab
 
 jobs:
