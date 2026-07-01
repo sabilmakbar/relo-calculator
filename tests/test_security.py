@@ -2,12 +2,13 @@
 
 These back the findings recorded in SECURITY_TEST.md.
 """
-import httpx
+from urllib.parse import urlparse
+
 import pytest
-import respx
 from fastapi.testclient import TestClient
 
-from app.data_sources import HOME_URL, URL_BASE, get_percentage_diff
+import app.data_sources as ds
+from app.data_sources import get_percentage_diff
 from app.main import app
 
 client = TestClient(app)
@@ -92,19 +93,39 @@ def test_negative_or_zero_salary_rejected(patched):
 
 # ── SSRF resistance — user input never changes the request host ───
 
-@respx.mock
-async def test_scraper_only_hits_numbeo_host():
-    respx.get(HOME_URL).mock(return_value=httpx.Response(200))
-    route = respx.get(url__startswith=URL_BASE).mock(
-        return_value=httpx.Response(200, text="""
-        <table class="table_indices_diff">
-          <tr><td>Cost of Living in B is 10.0% higher than in A</td></tr>
-          <tr><td>Rent Prices in B are 10.0% higher than in A</td></tr>
-        </table>""")
-    )
-    await get_percentage_diff("Malaysia", "Kuala Lumpur", "Singapore", "Singapore")
-    host = route.calls.last.request.url.host
-    assert host == "www.numbeo.com"  # city/country are query params, not the host
+async def test_scraper_only_hits_numbeo_host(monkeypatch):
+    seen = []
+
+    class _Resp:
+        status_code = 200
+        text = (
+            '<table class="table_indices_diff">'
+            "<tr><td>Cost of Living in B is 10.0% higher than in A</td></tr>"
+            "<tr><td>Rent Prices in B are 10.0% higher than in A</td></tr></table>"
+        )
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def get(self, url, params=None, **kwargs):
+            seen.append((url, params))
+            return _Resp()
+
+    monkeypatch.setattr(ds, "_new_session", lambda: _Session())
+
+    # A hostile "city" value must ride along as a query param — never the host.
+    evil = "http://evil.example/@numbeo"
+    await get_percentage_diff("Malaysia", evil, "Singapore", "Singapore")
+
+    hosts = {urlparse(url).hostname for url, _ in seen}
+    assert hosts == {"www.numbeo.com"}  # every request went to Numbeo, incl. warm-up
+    # the malicious input stayed in the params, not the URL
+    compare_params = [p for _, p in seen if p]
+    assert compare_params and evil in compare_params[0].values()
 
 
 def test_missing_required_field_is_handled(patched):
