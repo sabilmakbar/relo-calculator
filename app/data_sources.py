@@ -3,8 +3,8 @@ import logging
 import random
 import re
 
-import httpx
 from bs4 import BeautifulSoup
+from curl_cffi.requests import AsyncSession
 
 
 logger = logging.getLogger(__name__)
@@ -12,37 +12,21 @@ logger = logging.getLogger(__name__)
 URL_BASE = "https://www.numbeo.com/cost-of-living/compare_cities.jsp"
 HOME_URL = "https://www.numbeo.com/cost-of-living/"
 
-# Full Chrome header set. The point is to be indistinguishable from a real tab:
-# the sec-ch-ua / Sec-Fetch-* headers are what a browser auto-attaches and a
-# naive scraper omits. Keep the UA major version and the sec-ch-ua version in
-# sync (both Chrome 126) — a mismatch is itself a flag.
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/126.0.0.0 Safari/537.36"
-)
-BROWSER_HEADERS = {
-    "User-Agent": USER_AGENT,
-    "Accept": (
-        "text/html,application/xhtml+xml,application/xml;q=0.9,"
-        "image/avif,image/webp,*/*;q=0.8"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": HOME_URL,
-    "Upgrade-Insecure-Requests": "1",
-    "sec-ch-ua": '"Chromium";v="126", "Not)A;Brand";v="99", "Google Chrome";v="126"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"macOS"',
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-User": "?1",
-    "Sec-Fetch-Dest": "document",
-}
+# curl_cffi replays a real Chrome TLS/JA3 handshake *and* its full header set —
+# so the request is indistinguishable from a browser down to the TLS layer, which
+# plain httpx header-spoofing can't reach. This beats Cloudflare fingerprint-based
+# bot-detection; whether it also beats a datacenter IP-reputation block is exactly
+# what deploying this tests.
+_IMPERSONATE = "chrome"
 
 # 503/429 are Numbeo/Cloudflare soft-throttle responses — worth a short retry.
 _RETRY_STATUS = {429, 503}
 _MAX_ATTEMPTS = 3
+
+
+def _new_session() -> AsyncSession:
+    """Create the impersonating HTTP session. Isolated so tests can stub it."""
+    return AsyncSession()
 
 
 def extract_city_differences(text: str):
@@ -57,32 +41,31 @@ def extract_city_differences(text: str):
     return {"valuePct": signed, "direction": direction}
 
 
-async def _fetch_compare_page(params: dict) -> httpx.Response:
-    """Fetch the Numbeo compare page like a browser would.
+async def _fetch_compare_html(params: dict) -> str:
+    """Fetch the Numbeo compare page as HTML, impersonating Chrome.
 
-    Primes Cloudflare/consent cookies with a warm-up GET to the homepage on a
-    persistent client, then retries the real request with exponential backoff +
-    jitter on soft-throttle responses (429/503).
+    Warms up cookies with a homepage GET, then retries the real request with
+    exponential backoff + jitter on soft-throttle responses (429/503).
     """
-    last_exc: httpx.HTTPStatusError | None = None
-    async with httpx.AsyncClient(
-        timeout=15, follow_redirects=True, http2=True, headers=BROWSER_HEADERS
-    ) as client:
+    last_status = None
+    session = _new_session()
+    async with session:
         # Warm-up: collect Set-Cookie like a browser hitting the section first.
         try:
-            await client.get(HOME_URL)
-        except httpx.RequestError:
-            pass  # cookies are a bonus, not required — proceed to the real request
+            await session.get(HOME_URL, impersonate=_IMPERSONATE, timeout=20)
+        except Exception:  # noqa: BLE001 — cookies are a bonus, not required
+            pass
 
         for attempt in range(_MAX_ATTEMPTS):
-            r = await client.get(URL_BASE, params=params)
-            if r.status_code not in _RETRY_STATUS:
-                r.raise_for_status()
-                return r
-
-            last_exc = httpx.HTTPStatusError(
-                f"Numbeo returned {r.status_code}", request=r.request, response=r
+            r = await session.get(
+                URL_BASE, params=params, impersonate=_IMPERSONATE, timeout=20
             )
+            if r.status_code not in _RETRY_STATUS:
+                if r.status_code >= 400:
+                    raise RuntimeError(f"Numbeo returned HTTP {r.status_code}.")
+                return r.text
+
+            last_status = r.status_code
             if attempt < _MAX_ATTEMPTS - 1:
                 backoff = 1.5 * (2 ** attempt) + random.uniform(0, 0.75)
                 logger.warning(
@@ -93,8 +76,9 @@ async def _fetch_compare_page(params: dict) -> httpx.Response:
 
     # Exhausted retries on a soft throttle — surface a clean, user-facing message.
     raise RuntimeError(
-        "Numbeo is temporarily unavailable (rate-limited). Please try again in a moment."
-    ) from last_exc
+        f"Numbeo is temporarily unavailable (HTTP {last_status}). "
+        "Please try again in a moment."
+    )
 
 
 async def get_percentage_diff(country1: str, city1: str, country2: str, city2: str):
@@ -105,9 +89,9 @@ async def get_percentage_diff(country1: str, city1: str, country2: str, city2: s
         city2=city2
     )
 
-    r = await _fetch_compare_page(params)
+    html = await _fetch_compare_html(params)
 
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = BeautifulSoup(html, "html.parser")
 
     # Numbeo renders "Our system cannot find city X, Y" when a city is unknown.
     page_text = soup.get_text(" ", strip=True)

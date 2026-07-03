@@ -300,7 +300,7 @@ async def compare(
         error = "Network error contacting Numbeo. Check your connection and try again."
     except RuntimeError as e:
         logger.error("Numbeo parsing error: %s", e)
-        error = f"Could not parse Numbeo data: {e}. The site layout may have changed."
+        error = f"Could not parse Numbeo data: {e} The site layout may have changed."
     except Exception as e:
         logger.exception("Unexpected error in /compare")
         error = "An unexpected error occurred. Please try again."
