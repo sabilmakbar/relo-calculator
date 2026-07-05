@@ -1,0 +1,193 @@
+{
+  "_meta": {
+    "reference": "Singapore, Singapore"
+  },
+  "argentina|buenos aires": {
+    "col": 0.575,
+    "rent": 0.279
+  },
+  "australia|sydney": {
+    "col": 0.884,
+    "rent": 0.823
+  },
+  "austria|vienna": {
+    "col": 0.8200000000000001,
+    "rent": 0.43500000000000005
+  },
+  "bahrain|manama": {
+    "col": 0.496,
+    "rent": 0.352
+  },
+  "bangladesh|dhaka": {
+    "col": 0.2809999999999999,
+    "rent": 0.06099999999999994
+  },
+  "belgium|brussels": {
+    "col": 0.791,
+    "rent": 0.488
+  },
+  "brazil|sao paulo": {
+    "col": 0.45200000000000007,
+    "rent": 0.2390000000000001
+  },
+  "brunei|bandar seri begawan": {
+    "col": 0.46799999999999997,
+    "rent": 0.2290000000000001
+  },
+  "bulgaria|sofia": {
+    "col": 0.5609999999999999,
+    "rent": 0.277
+  },
+  "cambodia|phnom penh": {
+    "col": 0.4079999999999999,
+    "rent": 0.20499999999999996
+  },
+  "canada|toronto": {
+    "col": 0.72,
+    "rent": 0.5509999999999999
+  },
+  "chile|santiago": {
+    "col": 0.47,
+    "rent": 0.20099999999999996
+  },
+  "china|beijing": {
+    "col": 0.41900000000000004,
+    "rent": 0.35
+  },
+  "colombia|bogota": {
+    "col": 0.43700000000000006,
+    "rent": 0.22099999999999997
+  },
+  "costa rica|san jose": {
+    "col": 0.6379999999999999,
+    "rent": 0.3370000000000001
+  },
+  "croatia|zagreb": {
+    "col": 0.599,
+    "rent": 0.279
+  },
+  "cyprus|nicosia": {
+    "col": 0.635,
+    "rent": 0.32099999999999995
+  },
+  "czech republic|prague": {
+    "col": 0.633,
+    "rent": 0.43200000000000005
+  },
+  "denmark|copenhagen": {
+    "col": 0.957,
+    "rent": 0.645
+  },
+  "ecuador|quito": {
+    "col": 0.383,
+    "rent": 0.1459999999999999
+  },
+  "egypt|cairo": {
+    "col": 0.268,
+    "rent": 0.08999999999999997
+  },
+  "estonia|tallinn": {
+    "col": 0.702,
+    "rent": 0.278
+  },
+  "ethiopia|addis ababa": {
+    "col": 0.473,
+    "rent": 0.2709999999999999
+  },
+  "finland|helsinki": {
+    "col": 0.8160000000000001,
+    "rent": 0.44299999999999995
+  },
+  "france|paris": {
+    "col": 0.86,
+    "rent": 0.5900000000000001
+  },
+  "germany|berlin": {
+    "col": 0.798,
+    "rent": 0.506
+  },
+  "ghana|accra": {
+    "col": 0.473,
+    "rent": 0.17700000000000005
+  },
+  "greece|athens": {
+    "col": 0.627,
+    "rent": 0.262
+  },
+  "hungary|budapest": {
+    "col": 0.617,
+    "rent": 0.32599999999999996
+  },
+  "iceland|reykjavik": {
+    "col": 1.091,
+    "rent": 0.7150000000000001
+  },
+  "indonesia|jakarta": {
+    "col": 0.31599999999999995,
+    "rent": 0.15599999999999992
+  },
+  "iran|tehran": {
+    "col": 0.2509999999999999,
+    "rent": 0.15700000000000003
+  },
+  "iraq|baghdad": {
+    "col": 0.383,
+    "rent": 0.17099999999999993
+  },
+  "ireland|dublin": {
+    "col": 0.837,
+    "rent": 0.873
+  },
+  "italy|rome": {
+    "col": 0.661,
+    "rent": 0.45100000000000007
+  },
+  "japan|tokyo": {
+    "col": 0.6,
+    "rent": 0.396
+  },
+  "jordan|amman": {
+    "col": 0.502,
+    "rent": 0.127
+  },
+  "kenya|nairobi": {
+    "col": 0.3540000000000001,
+    "rent": 0.16299999999999992
+  },
+  "kuwait|kuwait city": {
+    "col": 0.502,
+    "rent": 0.33799999999999997
+  },
+  "laos|vientiane": {
+    "col": 0.385,
+    "rent": 0.19700000000000006
+  },
+  "latvia|riga": {
+    "col": 0.614,
+    "rent": 0.21299999999999997
+  },
+  "malaysia|kuala lumpur": {
+    "col": 0.43000000000000005,
+    "rent": 0.19700000000000006
+  },
+  "netherlands|amsterdam": {
+    "col": 0.896,
+    "rent": 0.803
+  },
+  "singapore|singapore": {
+    "col": 1.0,
+    "rent": 1.0
+  },
+  "thailand|bangkok": {
+    "col": 0.48,
+    "rent": 0.2659999999999999
+  },
+  "united arab emirates|dubai": {
+    "col": 0.681,
+    "rent": 0.785
+  },
+  "united kingdom|london": {
+    "col": 0.977,
+    "rent": 0.978
+  }
+}
