@@ -1,0 +1,619 @@
+{
+  "_meta": {
+    "source": "Numbeo cost-of-living compare_cities",
+    "note": "Pre-scraped locally; see scripts/build_cache.py",
+    "pairs": 51
+  },
+  "australia|sydney|malaysia|kuala lumpur": {
+    "city_from": "Sydney",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -51.3,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -76.1,
+      "direction": "lower"
+    }
+  },
+  "australia|sydney|singapore|singapore": {
+    "city_from": "Sydney",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 13.2,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 21.5,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|australia|sydney": {
+    "city_from": "Jakarta",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": 179.6,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 428.9,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|malaysia|kuala lumpur": {
+    "city_from": "Jakarta",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": 36.0,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 26.6,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|netherlands|amsterdam": {
+    "city_from": "Jakarta",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": 183.4,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 415.9,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|singapore|singapore": {
+    "city_from": "Jakarta",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 216.4,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 542.3,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|thailand|bangkok": {
+    "city_from": "Jakarta",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": 51.9,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 70.9,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|united arab emirates|dubai": {
+    "city_from": "Jakarta",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": 115.3,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 404.1,
+      "direction": "higher"
+    }
+  },
+  "indonesia|jakarta|united kingdom|london": {
+    "city_from": "Jakarta",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": 209.0,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 528.0,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|australia|sydney": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": 105.5,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 317.7,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|indonesia|jakarta": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -26.5,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -21.0,
+      "direction": "lower"
+    }
+  },
+  "malaysia|kuala lumpur|netherlands|amsterdam": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": 108.4,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 307.5,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|singapore|singapore": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 132.6,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 407.3,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|thailand|bangkok": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": 11.7,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 35.0,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|united arab emirates|dubai": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": 58.3,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 298.1,
+      "direction": "higher"
+    }
+  },
+  "malaysia|kuala lumpur|united kingdom|london": {
+    "city_from": "Kuala Lumpur",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": 127.2,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 396.0,
+      "direction": "higher"
+    }
+  },
+  "netherlands|amsterdam|australia|sydney": {
+    "city_from": "Amsterdam",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": -1.4,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": 2.5,
+      "direction": "higher"
+    }
+  },
+  "netherlands|amsterdam|indonesia|jakarta": {
+    "city_from": "Amsterdam",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -64.7,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -80.6,
+      "direction": "lower"
+    }
+  },
+  "netherlands|amsterdam|malaysia|kuala lumpur": {
+    "city_from": "Amsterdam",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -52.0,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -75.5,
+      "direction": "lower"
+    }
+  },
+  "netherlands|amsterdam|singapore|singapore": {
+    "city_from": "Amsterdam",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 11.6,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 24.5,
+      "direction": "higher"
+    }
+  },
+  "netherlands|amsterdam|thailand|bangkok": {
+    "city_from": "Amsterdam",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": -46.4,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -66.9,
+      "direction": "lower"
+    }
+  },
+  "netherlands|amsterdam|united arab emirates|dubai": {
+    "city_from": "Amsterdam",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": -24.0,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -2.3,
+      "direction": "lower"
+    }
+  },
+  "netherlands|amsterdam|united kingdom|london": {
+    "city_from": "Amsterdam",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": 9.0,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 21.7,
+      "direction": "higher"
+    }
+  },
+  "singapore|singapore|australia|sydney": {
+    "city_from": "Singapore",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": -11.6,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -17.7,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|indonesia|jakarta": {
+    "city_from": "Singapore",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -68.4,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -84.4,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|malaysia|kuala lumpur": {
+    "city_from": "Singapore",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -57.0,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -80.3,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|netherlands|amsterdam": {
+    "city_from": "Singapore",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": -10.4,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -19.7,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|thailand|bangkok": {
+    "city_from": "Singapore",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": -52.0,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -73.4,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|united arab emirates|dubai": {
+    "city_from": "Singapore",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": -31.9,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -21.5,
+      "direction": "lower"
+    }
+  },
+  "singapore|singapore|united kingdom|london": {
+    "city_from": "Singapore",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": -2.3,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -2.2,
+      "direction": "lower"
+    }
+  },
+  "thailand|bangkok|australia|sydney": {
+    "city_from": "Bangkok",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": 84.1,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 209.4,
+      "direction": "higher"
+    }
+  },
+  "thailand|bangkok|indonesia|jakarta": {
+    "city_from": "Bangkok",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -34.2,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -41.5,
+      "direction": "lower"
+    }
+  },
+  "thailand|bangkok|malaysia|kuala lumpur": {
+    "city_from": "Bangkok",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -10.4,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -25.9,
+      "direction": "lower"
+    }
+  },
+  "thailand|bangkok|netherlands|amsterdam": {
+    "city_from": "Bangkok",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": 86.6,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 201.8,
+      "direction": "higher"
+    }
+  },
+  "thailand|bangkok|singapore|singapore": {
+    "city_from": "Bangkok",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 108.3,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 275.8,
+      "direction": "higher"
+    }
+  },
+  "thailand|bangkok|united arab emirates|dubai": {
+    "city_from": "Bangkok",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": 41.8,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 194.9,
+      "direction": "higher"
+    }
+  },
+  "thailand|bangkok|united kingdom|london": {
+    "city_from": "Bangkok",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": 103.5,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 267.4,
+      "direction": "higher"
+    }
+  },
+  "united arab emirates|dubai|australia|sydney": {
+    "city_from": "Dubai",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": 29.8,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 4.9,
+      "direction": "higher"
+    }
+  },
+  "united arab emirates|dubai|indonesia|jakarta": {
+    "city_from": "Dubai",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -53.6,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -80.2,
+      "direction": "lower"
+    }
+  },
+  "united arab emirates|dubai|malaysia|kuala lumpur": {
+    "city_from": "Dubai",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -36.8,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -74.9,
+      "direction": "lower"
+    }
+  },
+  "united arab emirates|dubai|netherlands|amsterdam": {
+    "city_from": "Dubai",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": 31.6,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 2.3,
+      "direction": "higher"
+    }
+  },
+  "united arab emirates|dubai|singapore|singapore": {
+    "city_from": "Dubai",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 46.9,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 27.4,
+      "direction": "higher"
+    }
+  },
+  "united arab emirates|dubai|thailand|bangkok": {
+    "city_from": "Dubai",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": -29.5,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -66.1,
+      "direction": "lower"
+    }
+  },
+  "united arab emirates|dubai|united kingdom|london": {
+    "city_from": "Dubai",
+    "city_to": "London",
+    "col_excl_rent": {
+      "valuePct": 43.5,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 24.6,
+      "direction": "higher"
+    }
+  },
+  "united kingdom|london|australia|sydney": {
+    "city_from": "London",
+    "city_to": "Sydney",
+    "col_excl_rent": {
+      "valuePct": -9.5,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -15.8,
+      "direction": "lower"
+    }
+  },
+  "united kingdom|london|indonesia|jakarta": {
+    "city_from": "London",
+    "city_to": "Jakarta",
+    "col_excl_rent": {
+      "valuePct": -67.6,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -84.1,
+      "direction": "lower"
+    }
+  },
+  "united kingdom|london|malaysia|kuala lumpur": {
+    "city_from": "London",
+    "city_to": "Kuala Lumpur",
+    "col_excl_rent": {
+      "valuePct": -56.0,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -79.8,
+      "direction": "lower"
+    }
+  },
+  "united kingdom|london|netherlands|amsterdam": {
+    "city_from": "London",
+    "city_to": "Amsterdam",
+    "col_excl_rent": {
+      "valuePct": -8.3,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -17.8,
+      "direction": "lower"
+    }
+  },
+  "united kingdom|london|singapore|singapore": {
+    "city_from": "London",
+    "city_to": "Singapore",
+    "col_excl_rent": {
+      "valuePct": 2.4,
+      "direction": "higher"
+    },
+    "rent": {
+      "valuePct": 2.3,
+      "direction": "higher"
+    }
+  },
+  "united kingdom|london|thailand|bangkok": {
+    "city_from": "London",
+    "city_to": "Bangkok",
+    "col_excl_rent": {
+      "valuePct": -50.8,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -72.8,
+      "direction": "lower"
+    }
+  },
+  "united kingdom|london|united arab emirates|dubai": {
+    "city_from": "London",
+    "city_to": "Dubai",
+    "col_excl_rent": {
+      "valuePct": -30.3,
+      "direction": "lower"
+    },
+    "rent": {
+      "valuePct": -19.7,
+      "direction": "lower"
+    }
+  }
+}

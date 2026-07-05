@@ -1,6 +1,7 @@
 """Shared fixtures: sample Numbeo HTML and Yahoo Finance JSON payloads."""
 import pytest
 
+from app import data_sources as _ds
 from app import fx as _fx
 
 
@@ -10,6 +11,13 @@ def _clear_spot_cache():
     _fx._SPOT_CACHE.clear()
     yield
     _fx._SPOT_CACHE.clear()
+
+
+@pytest.fixture(autouse=True)
+def _empty_numbeo_cache(monkeypatch):
+    """Default to an empty Numbeo cache so tests exercise the live scrape path.
+    Cache-specific tests populate _ds._CACHE explicitly."""
+    monkeypatch.setattr(_ds, "_CACHE", {})
 
 
 @pytest.fixture

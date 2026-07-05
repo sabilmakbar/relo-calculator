@@ -1,7 +1,9 @@
 import asyncio
+import json
 import logging
 import random
 import re
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 from curl_cffi.requests import AsyncSession
@@ -11,6 +13,31 @@ logger = logging.getLogger(__name__)
 
 URL_BASE = "https://www.numbeo.com/cost-of-living/compare_cities.jsp"
 HOME_URL = "https://www.numbeo.com/cost-of-living/"
+
+# Pre-scraped city-pair results, built locally (from a clean residential IP) by
+# scripts/build_cache.py and committed to the repo. Deployed free hosts (Render,
+# HF Spaces) sit on IP ranges Numbeo/Cloudflare blocks with a 503, so serving from
+# this cache is how cross-country comparisons work in production at all. Cached
+# pairs never touch Numbeo; only an un-cached pair attempts a (possibly blocked)
+# live scrape.
+_CACHE_PATH = Path(__file__).parent / "data" / "numbeo_cache.json"
+
+
+def _load_cache() -> dict:
+    try:
+        raw = json.loads(_CACHE_PATH.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        return {}
+    # Skip the "_meta" provenance block (and any other underscore-prefixed keys).
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+_CACHE = _load_cache()
+
+
+def _cache_key(country1: str, city1: str, country2: str, city2: str) -> str:
+    """Direction-sensitive key, normalised so casing/whitespace don't miss."""
+    return "|".join(p.strip().lower() for p in (country1, city1, country2, city2))
 
 # curl_cffi replays a real Chrome TLS/JA3 handshake *and* its full header set —
 # so the request is indistinguishable from a browser down to the TLS layer, which
@@ -82,6 +109,15 @@ async def _fetch_compare_html(params: dict) -> str:
 
 
 async def get_percentage_diff(country1: str, city1: str, country2: str, city2: str):
+    """Cost-of-living diff for a city pair — cache first, live scrape otherwise."""
+    key = _cache_key(country1, city1, country2, city2)
+    if key in _CACHE:
+        logger.info("Numbeo cache hit: %s", key)
+        return dict(_CACHE[key])
+    return await _scrape_live(country1, city1, country2, city2)
+
+
+async def _scrape_live(country1: str, city1: str, country2: str, city2: str):
     params = dict(
         country1=country1,
         city1=city1,

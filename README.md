@@ -45,7 +45,7 @@ docker run -p 8000:8000 relo-calculator
 ## Tests
 
 ```bash
-uv run pytest --cov     # 131 tests, ~93% coverage
+uv run pytest --cov     # 134 tests, ~93% coverage
 ```
 
 ## License

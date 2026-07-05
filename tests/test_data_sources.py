@@ -4,6 +4,7 @@ import pytest
 import app.data_sources as ds
 from app.data_sources import (
     HOME_URL,
+    _cache_key,
     extract_city_differences,
     get_percentage_diff,
 )
@@ -124,3 +125,37 @@ async def test_transient_503_then_success(monkeypatch, numbeo_html):
     out = await get_percentage_diff("Malaysia", "Kuala Lumpur", "Singapore", "Singapore")
     assert out["col_excl_rent"] == {"valuePct": 134.5, "direction": "higher"}
     assert session.compare_calls == 2
+
+
+# ── cache layer ───────────────────────────────────────────────────
+
+def test_cache_key_normalises_case_and_whitespace():
+    assert _cache_key("Malaysia", " Kuala Lumpur ", "Singapore", "Singapore") == (
+        "malaysia|kuala lumpur|singapore|singapore"
+    )
+    # direction matters — reversed pair is a different key
+    assert _cache_key("A", "x", "B", "y") != _cache_key("B", "y", "A", "x")
+
+
+async def test_cache_hit_skips_network(monkeypatch):
+    cached = {
+        "city_from": "Kuala Lumpur",
+        "city_to": "Singapore",
+        "col_excl_rent": {"valuePct": 100.0, "direction": "higher"},
+        "rent": {"valuePct": 200.0, "direction": "higher"},
+    }
+    ds._CACHE[_cache_key("Malaysia", "Kuala Lumpur", "Singapore", "Singapore")] = cached
+    # If it hit the network the fake would raise (no responses queued).
+    session = _install(monkeypatch)
+    out = await get_percentage_diff("malaysia", "KUALA LUMPUR", "singapore", "Singapore")
+    assert out == cached
+    assert session.compare_calls == 0
+
+
+async def test_cache_miss_falls_through_to_scrape(monkeypatch, numbeo_html):
+    ds._CACHE[_cache_key("Malaysia", "Kuala Lumpur", "Singapore", "Singapore")] = {"x": 1}
+    session = _install(monkeypatch, _FakeResp(200, numbeo_html))
+    # A pair not in the cache must still scrape live.
+    out = await get_percentage_diff("Malaysia", "Penang", "Singapore", "Singapore")
+    assert out["col_excl_rent"] == {"valuePct": 134.5, "direction": "higher"}
+    assert session.compare_calls == 1
