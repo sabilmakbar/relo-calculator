@@ -122,6 +122,10 @@
     "col": 1.091,
     "rent": 0.7150000000000001
   },
+  "india|new delhi": {
+    "col": 0.2390000000000001,
+    "rent": 0.09999999999999998
+  },
   "indonesia|jakarta": {
     "col": 0.31599999999999995,
     "rent": 0.15599999999999992
@@ -137,6 +141,10 @@
   "ireland|dublin": {
     "col": 0.837,
     "rent": 0.873
+  },
+  "israel|tel aviv": {
+    "col": 1.12,
+    "rent": 0.7070000000000001
   },
   "italy|rome": {
     "col": 0.661,
@@ -333,6 +341,10 @@
   "united kingdom|london": {
     "col": 0.977,
     "rent": 0.978
+  },
+  "united states|new york": {
+    "col": 1.095,
+    "rent": 1.441
   },
   "uruguay|montevideo": {
     "col": 0.6279999999999999,

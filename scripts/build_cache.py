@@ -43,6 +43,18 @@ def _index_key(country: str, city: str) -> str:
     return f"{country.strip().lower()}|{city.strip().lower()}"
 
 
+# Some dropdown capitals don't match Numbeo's own city naming. We scrape under
+# Numbeo's name but still key the result by the display capital, so the app's
+# lookup (which uses the dropdown value) resolves. Keys: (country, display_city).
+NUMBEO_CITY = {
+    ("United States", "New York"): "New York, NY",
+    ("Ukraine", "Kyiv"): "Kiev",
+    ("Israel", "Tel Aviv"): "Tel Aviv-Yafo",
+    ("Kazakhstan", "Astana"): "Nur-Sultan",
+    ("India", "New Delhi"): "Delhi",
+}
+
+
 def _load_index() -> dict:
     try:
         raw = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
@@ -66,9 +78,10 @@ async def scrape_indices(index: dict) -> tuple[int, int, int]:
         if key in index:
             already += 1
             continue
-        label = f"{city}, {country}"
+        scrape_city = NUMBEO_CITY.get((country, city), city)
+        label = f"{city}, {country}" + (f" (as '{scrape_city}')" if scrape_city != city else "")
         try:
-            r = await _scrape_live(REF_COUNTRY, REF_CITY, country, city)
+            r = await _scrape_live(REF_COUNTRY, REF_CITY, country, scrape_city)
             index[key] = {
                 "col": 1 + r["col_excl_rent"]["valuePct"] / 100,
                 "rent": 1 + r["rent"]["valuePct"] / 100,
