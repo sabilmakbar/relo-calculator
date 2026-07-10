@@ -1,154 +1,135 @@
-"""Build the offline Numbeo cache for every capital pair, cheaply.
+"""Build the per-city cost index from Numbeo's "Cost of Living Index by City".
 
-Deployed free hosts (Render, HF Spaces) get 503'd by Numbeo/Cloudflare, so the
-app serves cross-country comparisons from app/data/numbeo_cache.json, built here
-locally from a clean residential IP.
-
-Full pairwise coverage of N capitals is N*(N-1) comparisons — 8,000+ for the
-whole dropdown, which the rate limiter (≈50 requests/burst) makes impractical.
-But Numbeo's pairwise percentages are reciprocal AND transitive (verified), i.e.
-they come from a single per-city cost index. So we only scrape each capital ONCE
-against a fixed reference city (~91 requests), store its index relative to the
-reference, then COMPUTE every ordered pair offline:
-
-    valuePct(A→B) = (index_B / index_A − 1) × 100
-
-Run it (repeatedly — it resumes, skipping capitals already in the index, and the
-rate limiter will stop each run after ~50 new cities):
+ONE request to the rankings page yields ~550 cities with their Cost of Living
+Index and Rent Index (NYC = 100 basis) — no per-pair scraping, no rate-limit
+dance. We keep up to MAX_PER_COUNTRY cities per dropdown country (always including
+that country's capital, aliased if Numbeo names it differently), and the app
+computes any pair from these indices on the fly (ratios are basis-independent).
 
     uv run python scripts/build_cache.py
 
-Each run persists the per-city index (numbeo_index.json) and regenerates the full
-pairwise cache from whatever's collected so far. Capitals Numbeo doesn't know are
-skipped. Commit both JSON files.
+Commit the regenerated app/data/numbeo_index.json. Cost-of-living data moves
+slowly, so a snapshot stays valid for months; re-run to refresh.
 """
-import asyncio
 import json
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from bs4 import BeautifulSoup  # noqa: E402
+from curl_cffi.requests import Session  # noqa: E402
+
 from app.currencies import COUNTRIES, country_to_capital  # noqa: E402
-from app.data_sources import _CACHE_PATH, _cache_key, _scrape_live  # noqa: E402
+from app.data_sources import _INDEX_PATH, _index_key  # noqa: E402
 
-# Reference city — must exist in Numbeo. Its index is 1.0; everything is relative.
-REF_COUNTRY, REF_CITY = "Singapore", "Singapore"
+RANKINGS_URL = "https://www.numbeo.com/cost-of-living/rankings_current.jsp"
+MAX_PER_COUNTRY = 10
 
-INDEX_PATH = Path(__file__).resolve().parent.parent / "app" / "data" / "numbeo_index.json"
-DELAY_SECONDS = 2.0
-
-
-def _index_key(country: str, city: str) -> str:
-    return f"{country.strip().lower()}|{city.strip().lower()}"
-
-
-# Some dropdown capitals don't match Numbeo's own city naming. We scrape under
-# Numbeo's name but still key the result by the display capital, so the app's
-# lookup (which uses the dropdown value) resolves. Keys: (country, display_city).
-NUMBEO_CITY = {
-    ("United States", "New York"): "New York, NY",
-    ("Ukraine", "Kyiv"): "Kiev",
-    ("Israel", "Tel Aviv"): "Tel Aviv-Yafo",
-    ("Kazakhstan", "Astana"): "Nur-Sultan",
-    ("India", "New Delhi"): "Delhi",
+# Rankings country label (lowercased) → our dropdown country name, when they differ.
+COUNTRY_ALIAS = {
+    "czechia": "Czech Republic",
+    "hong kong (china)": "Hong Kong",
 }
 
+# Capitals Numbeo's ranking omits (too little data to be ranked). NYC=100 basis,
+# taken once from the compare page; low-data cities that rarely move, so a static
+# snapshot is fine. Without these, selecting the country would 503 in production.
+FALLBACK_CITIES = {
+    ("Laos", "Vientiane"): {"col": 35.2, "rent": 13.7},
+    ("Brunei", "Bandar Seri Begawan"): {"col": 42.8, "rent": 15.9},
+    ("Myanmar", "Yangon"): {"col": 38.6, "rent": 10.1},
+}
 
-def _load_index() -> dict:
-    try:
-        raw = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError):
-        return {}
-    return {k: v for k, v in raw.items() if not k.startswith("_")}
+_OUR = {c.lower(): c for c in COUNTRIES}
 
 
-async def scrape_indices(index: dict) -> tuple[int, int, int]:
-    """Scrape REF→capital for any capital not yet in the index. Returns
-    (new, already, failed)."""
-    capitals = [(c, country_to_capital(c)) for c in COUNTRIES]
-    capitals = [(c, city) for c, city in capitals if city]
-
-    # The reference anchors the scale at 1.0 — no need to scrape it.
-    index.setdefault(_index_key(REF_COUNTRY, REF_CITY), {"col": 1.0, "rent": 1.0})
-
-    new = already = failed = 0
-    for i, (country, city) in enumerate(capitals, 1):
-        key = _index_key(country, city)
-        if key in index:
-            already += 1
+def fetch_rankings() -> list[tuple[str, str, float, float]]:
+    """Return (country_raw, city, col_index, rent_index) for every ranked city."""
+    s = Session()
+    r = s.get(RANKINGS_URL, impersonate="chrome", timeout=30)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "html.parser")
+    table = soup.select_one("table#t2") or soup.select_one("table")
+    rows = []
+    for tr in table.find_all("tr")[1:]:
+        tds = tr.find_all("td")
+        if len(tds) < 4:
             continue
-        scrape_city = NUMBEO_CITY.get((country, city), city)
-        label = f"{city}, {country}" + (f" (as '{scrape_city}')" if scrape_city != city else "")
+        label = tds[1].get_text(strip=True)  # e.g. "New York, NY, United States"
+        if ", " not in label:
+            continue
+        parts = [p.strip() for p in label.split(",")]
+        country_raw, city = parts[-1], ", ".join(parts[:-1])
         try:
-            r = await _scrape_live(REF_COUNTRY, REF_CITY, country, scrape_city)
-            index[key] = {
-                "col": 1 + r["col_excl_rent"]["valuePct"] / 100,
-                "rent": 1 + r["rent"]["valuePct"] / 100,
-            }
-            new += 1
-            print(f"[{i}/{len(capitals)}] ok    {label}")
-        except Exception as exc:  # noqa: BLE001 — skip & report, keep going
-            failed += 1
-            print(f"[{i}/{len(capitals)}] SKIP  {label}  ({exc})")
-        INDEX_PATH.write_text(  # persist after every attempt → resumable
-            json.dumps({"_meta": {"reference": f"{REF_CITY}, {REF_COUNTRY}"},
-                        **dict(sorted(index.items()))}, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        await asyncio.sleep(DELAY_SECONDS)
-    return new, already, failed
+            col = float(tds[2].get_text(strip=True))
+            rent = float(tds[3].get_text(strip=True))
+        except ValueError:
+            continue
+        rows.append((country_raw, city, col, rent))
+    return rows
 
 
-def expand_to_pairs(index: dict) -> dict:
-    """Compute every ordered pair from the per-city indices."""
-    # key -> (country, city) recovered from index keys, plus display cities.
-    cities = {}  # index_key -> (country_title, city_title)
-    for c in COUNTRIES:
-        city = country_to_capital(c)
-        if city and _index_key(c, city) in index:
-            cities[_index_key(c, city)] = (c, city)
+def build_index(rows):
+    by_country = defaultdict(list)  # our_country -> [(city, col, rent)] in rank order
+    unmatched = set()
+    for country_raw, city, col, rent in rows:
+        our = COUNTRY_ALIAS.get(country_raw.lower()) or _OUR.get(country_raw.lower())
+        if not our:
+            unmatched.add(country_raw)
+            continue
+        by_country[our].append((city, col, rent))
 
-    pairs = {}
-    for ak, (a_country, a_city) in cities.items():
-        for bk, (b_country, b_city) in cities.items():
-            if ak == bk:
-                continue
-            sa, sb = index[ak], index[bk]
-            entry = {"city_from": a_city, "city_to": b_city}
-            for field, dest_key in (("col_excl_rent", "col"), ("rent", "rent")):
-                pct = round((sb[dest_key] / sa[dest_key] - 1) * 100, 1)
-                entry[field] = {
-                    "valuePct": pct,
-                    "direction": "higher" if pct >= 0 else "lower",
-                }
-            pairs[_cache_key(a_country, a_city, b_country, b_city)] = entry
-    return pairs
+    index = {}
+    for our, cities in by_country.items():
+        for city, col, rent in cities[:MAX_PER_COUNTRY]:
+            index[_index_key(our, city)] = {"col": col, "rent": rent}
+        # Ensure the dropdown capital resolves even if Numbeo names it differently
+        # (e.g. "New York" vs "New York, NY") by aliasing it to the best match.
+        cap = country_to_capital(our)
+        if cap and _index_key(our, cap) not in index:
+            match = next(
+                (t for t in cities
+                 if cap.lower() in t[0].lower() or t[0].lower() in cap.lower()),
+                None,
+            )
+            if match:
+                index[_index_key(our, cap)] = {"col": match[1], "rent": match[2]}
+
+    # Backfill capitals the ranking doesn't carry.
+    for (country, city), vals in FALLBACK_CITIES.items():
+        index.setdefault(_index_key(country, city), dict(vals))
+    return index, unmatched
 
 
-async def main() -> int:
-    index = _load_index()
-    print(f"Reference: {REF_CITY}, {REF_COUNTRY}. Index has {len(index)} cities.\n")
-    new, already, failed = await scrape_indices(index)
+def main() -> int:
+    rows = fetch_rankings()
+    print(f"rankings rows parsed: {len(rows)}")
+    index, unmatched = build_index(rows)
 
-    pairs = expand_to_pairs(index)
+    caps = [(c, country_to_capital(c)) for c in COUNTRIES]
+    covered = [c for c, cap in caps if cap and _index_key(c, cap) in index]
+    missing = [c for c, cap in caps if cap and _index_key(c, cap) not in index]
+    print(f"cities indexed: {len(index)}")
+    print(f"capitals covered: {len(covered)}/{len(COUNTRIES)}")
+    if missing:
+        print("capitals NOT covered (live-scrape fallback):", ", ".join(missing))
+
     payload = {
         "_meta": {
-            "source": "Numbeo cost-of-living compare_cities (index-derived)",
-            "reference": f"{REF_CITY}, {REF_COUNTRY}",
-            "note": "Per-city indices in numbeo_index.json; pairs computed. See scripts/build_cache.py",
+            "source": "Numbeo Cost of Living Index by City (rankings_current.jsp)",
+            "basis": "New York City = 100",
+            "max_per_country": MAX_PER_COUNTRY,
             "cities": len(index),
-            "pairs": len(pairs),
+            "note": "Pairs computed on the fly; see app/data_sources.py + scripts/build_cache.py",
         },
-        **dict(sorted(pairs.items())),
+        **dict(sorted(index.items())),
     }
-    _CACHE_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(
-        f"\nIndex: {new} new, {already} already, {failed} skipped ({len(index)} cities).\n"
-        f"Cache: {len(pairs)} pairs → {_CACHE_PATH.relative_to(Path.cwd())}"
-    )
+    _INDEX_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"wrote {_INDEX_PATH}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(asyncio.run(main()))
+    raise SystemExit(main())

@@ -14,10 +14,10 @@ def _clear_spot_cache():
 
 
 @pytest.fixture(autouse=True)
-def _empty_numbeo_cache(monkeypatch):
-    """Default to an empty Numbeo cache so tests exercise the live scrape path.
-    Cache-specific tests populate _ds._CACHE explicitly."""
-    monkeypatch.setattr(_ds, "_CACHE", {})
+def _empty_numbeo_index(monkeypatch):
+    """Default to an empty Numbeo index so tests exercise the live scrape path.
+    Index-specific tests populate _ds._INDEX explicitly."""
+    monkeypatch.setattr(_ds, "_INDEX", {})
 
 
 @pytest.fixture
