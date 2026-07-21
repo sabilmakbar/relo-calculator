@@ -1,3 +1,13 @@
+---
+title: Relocation Finance Tools
+emoji: 🌍
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # Relocation Finance Tools
 
 Estimate the money side of moving abroad. A landing page (`/`) offers two tools:
@@ -35,7 +45,7 @@ docker run -p 8000:8000 relo-calculator
 ## Tests
 
 ```bash
-uv run pytest --cov     # 131 tests, ~93% coverage
+uv run pytest --cov     # 134 tests, ~93% coverage
 ```
 
 ## License
