@@ -9,14 +9,16 @@ FastAPI + server-rendered HTML. No database, no secrets, no API keys — cost da
 
 ## Quickstart
 
+Requires [uv](https://docs.astral.sh/uv/) (it manages the Python 3.11+ toolchain).
+
 ```bash
-uv sync       # install dependencies
-./run.sh      # start the dev server (uses uv → the project .venv)
+uv sync
+uv run uvicorn app.main:app --reload      # or: ./run.sh
 ```
 
-Open [http://localhost:8000](http://localhost:8000).
+Then open <http://localhost:8000>.
 
-With Docker:
+### Docker
 
 ```bash
 docker build -t relo-calculator .
