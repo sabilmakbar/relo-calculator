@@ -186,7 +186,7 @@
         </div>
         <div class="row">
           <span class="label">Estimated tax + social ({{ '%.0f'|format(result.rate) }}%)</span>
-          <span class="val">− {{ '{:,.0f}'.format(result.tax) }}{% if cur %} {{ cur }}{% endif %}</span>
+          <span class="val">{% if result.tax|round(0) != 0 %}− {% endif %}{{ '{:,.0f}'.format(result.tax) }}{% if cur %} {{ cur }}{% endif %}</span>
         </div>
         <div class="row">
           <span class="label">Net take-home</span>
