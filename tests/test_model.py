@@ -89,3 +89,9 @@ def test_zero_target_matches_breakeven():
     need = required_net_new_for_savings_increase(16000, 0, HIGHER, RENT_HIGHER, fx_rate=fx)
     m = calculate_stats(16000, need, HIGHER, RENT_HIGHER, fx_rate=fx)
     assert need == pytest.approx(m["equiv_net_new_for_same_savings"])
+
+
+def test_savings_pct_delta_none_when_home_savings_zero():
+    # weights sum to 1 → savings_home = 0 → percentage delta is undefined (None)
+    out = calculate_stats(5000, 5000, HIGHER, RENT_HIGHER, w_rent=0.5, w_non_rent=0.5)
+    assert out["savings_pct_delta"] is None

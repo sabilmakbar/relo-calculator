@@ -230,3 +230,95 @@ def test_negative_salary_rejected(patched):
     })
     assert r.status_code == 200
     assert "positive number" in r.text
+
+
+# ── coverage: helper branches ─────────────────────────────────────
+import httpx  # noqa: E402
+from app.main import _validate_place, _num_str, _to_amount  # noqa: E402
+
+
+def test_fx_fmt_zero():
+    assert _fx_fmt(0) == "0.00"
+
+
+def test_validate_place_empty_raises():
+    with pytest.raises(ValueError, match="must not be empty"):
+        _validate_place("City", "   ")
+
+
+def test_num_str_non_integer_keeps_decimal():
+    assert _num_str(3.5) == "3.5"
+    assert _num_str(4.0) == "4"
+
+
+def test_to_amount_required_but_empty_raises():
+    with pytest.raises(ValueError, match="is required"):
+        _to_amount("Salary", "", required=True)
+
+
+# ── coverage: /compare error handling & branches ──────────────────
+
+async def fake_fx_ok(from_currency, to_currency):
+    r = 0.30
+    return {"pair": f"{from_currency}/{to_currency}", "source": "x", "latest": r,
+            "ema_30": r, "ema_90": r, "ema_180": r, "forecast": r, "trend": "flat",
+            "spot_only": False, "scale": 1, "band_low": r, "band_high": r, "days": 200}
+
+
+def _raise(exc):
+    async def _f(*a, **k):
+        raise exc
+    return _f
+
+
+def _post(**overrides):
+    data = {"country1": "Malaysia", "city1": "Kuala Lumpur",
+            "country2": "Singapore", "city2": "Singapore",
+            "net_home": "8000", "net_new": "6000",
+            "savings_ratio": "20", "rent_share": "25"}
+    data.update(overrides)
+    return client.post("/compare", data=data)
+
+
+def test_compare_http_status_error(monkeypatch):
+    monkeypatch.setattr("app.main.fetch_fx_ema", fake_fx_ok)
+    req = httpx.Request("GET", "https://www.numbeo.com")
+    resp = httpx.Response(503, request=req)
+    monkeypatch.setattr("app.main.get_percentage_diff",
+                        _raise(httpx.HTTPStatusError("boom", request=req, response=resp)))
+    assert "503" in _post().text
+
+
+def test_compare_request_error(monkeypatch):
+    monkeypatch.setattr("app.main.fetch_fx_ema", fake_fx_ok)
+    monkeypatch.setattr("app.main.get_percentage_diff", _raise(httpx.RequestError("down")))
+    assert "Network error" in _post().text
+
+
+def test_compare_runtime_error(monkeypatch):
+    monkeypatch.setattr("app.main.fetch_fx_ema", fake_fx_ok)
+    monkeypatch.setattr("app.main.get_percentage_diff", _raise(RuntimeError("layout changed")))
+    assert "Could not parse" in _post().text
+
+
+def test_compare_unexpected_error(monkeypatch):
+    monkeypatch.setattr("app.main.fetch_fx_ema", fake_fx_ok)
+    monkeypatch.setattr("app.main.get_percentage_diff", _raise(Exception("weird")))
+    assert "unexpected error" in _post().text.lower()
+
+
+def test_compare_negative_new_salary(monkeypatch):
+    monkeypatch.setattr("app.main.get_percentage_diff", fake_diffs)
+    monkeypatch.setattr("app.main.fetch_fx_ema", fake_fx_ok)
+    assert "positive number" in _post(net_new="-100").text
+
+
+def test_compare_same_currency_different_country(monkeypatch):
+    # Germany & Netherlands are both EUR → cross-country but no FX needed.
+    monkeypatch.setattr("app.main.get_percentage_diff", fake_diffs)
+    r = client.post("/compare", data={
+        "country1": "Germany", "city1": "Berlin",
+        "country2": "Netherlands", "city2": "Amsterdam",
+        "net_home": "3000", "net_new": "3500",
+        "savings_ratio": "20", "rent_share": "25"})
+    assert r.status_code == 200
