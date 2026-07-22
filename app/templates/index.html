@@ -78,6 +78,25 @@
 
       .page { max-width: 680px; margin: 0 auto; }
 
+      /* Wide-screen two-column layout: form on the left, results on the right.
+         Only kicks in when there are results AND the viewport is wide enough —
+         otherwise the page stays a single centred 680px column (mobile, tablet,
+         and the empty initial state are unchanged). */
+      .layout { display: block; }
+      @media (min-width: 900px) {
+        .page.wide { max-width: 1120px; }
+        .page.wide .layout {
+          display: grid;
+          grid-template-columns: minmax(360px, 440px) 1fr;
+          gap: 1.25rem;
+          align-items: start;
+        }
+        /* Keep the form visible while scrolling a long results column. */
+        .page.wide .col-input { position: sticky; top: 1.5rem; }
+        .page.wide .col-input .card:last-child,
+        .page.wide .col-results .card:last-child { margin-bottom: 0; }
+      }
+
       #theme-toggle {
         position: fixed;
         top: 1rem;
@@ -432,6 +451,10 @@
         margin-top: .4rem;
       }
 
+      /* Two sliders side by side; collapses to one column on small screens. */
+      .sliders-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; }
+      @media (max-width: 500px) { .sliders-grid { grid-template-columns: 1fr; } }
+
       .budget-breakdown {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -511,7 +534,7 @@
       })();
     </script>
 
-    <div class="page">
+    <div class="page{% if result %} wide{% endif %}">
 
       <button id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
 
@@ -525,6 +548,8 @@
         <a href="/tax">Take-home estimator</a>
       </nav>
 
+      <div class="layout">
+      <div class="col-input">
       <div class="card">
         <div class="card-title">Locations</div>
 
@@ -596,27 +621,29 @@
 
         <div class="card-title">Budget split <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.78rem">— of your current salary</span></div>
 
-        <div class="slider-field">
-          <label>
-            Savings rate
-            <span class="slider-input">
-              <input type="number" id="savings-num" min="0" max="100" step="1" value="{{ form.savings_ratio }}" />%
-            </span>
-          </label>
-          <input type="range" id="savings-range" name="savings_ratio" form="calc"
-                 min="0" max="100" step="1" value="{{ form.savings_ratio }}" />
-        </div>
+        <div class="sliders-grid">
+          <div class="slider-field">
+            <label>
+              Savings rate
+              <span class="slider-input">
+                <input type="number" id="savings-num" min="0" max="100" step="1" value="{{ form.savings_ratio }}" />%
+              </span>
+            </label>
+            <input type="range" id="savings-range" name="savings_ratio" form="calc"
+                   min="0" max="100" step="1" value="{{ form.savings_ratio }}" />
+          </div>
 
-        <div class="slider-field">
-          <label>
-            Of the rest, rent share
-            <span class="slider-input">
-              <input type="number" id="rent-num" min="0" max="100" step="0.1" value="{{ form.rent_share }}" />%
-            </span>
-            <span style="color:var(--muted);font-weight:400">(remainder → other living costs)</span>
-          </label>
-          <input type="range" id="rent-range" name="rent_share" form="calc"
-                 min="0" max="100" step="0.5" value="{{ form.rent_share }}" />
+          <div class="slider-field">
+            <label>
+              Of the rest, rent share
+              <span class="slider-input">
+                <input type="number" id="rent-num" min="0" max="100" step="0.1" value="{{ form.rent_share }}" />%
+              </span>
+              <span style="color:var(--muted);font-weight:400">(remainder → other)</span>
+            </label>
+            <input type="range" id="rent-range" name="rent_share" form="calc"
+                   min="0" max="100" step="0.5" value="{{ form.rent_share }}" />
+          </div>
         </div>
 
         <!-- Live breakdown (updates as sliders / salary change) -->
@@ -626,6 +653,9 @@
           <button class="btn" type="submit">Compare →</button>
         </form>
       </div>
+      </div><!-- /col-input -->
+
+      <div class="col-results">
 
       {% if error %}
         <div class="error-box">{{ error }}</div>
@@ -837,6 +867,9 @@
         {% endif %}{# result.model #}
 
       {% endif %}
+
+      </div><!-- /col-results -->
+      </div><!-- /layout -->
 
       <footer class="site-footer">
         Made by
