@@ -1,5 +1,7 @@
 # Relocation Finance Tools
 
+> 🌍 **[Try it live →](https://relo-calculator.onrender.com/)** — no install needed. (Free tier: the first visit after a quiet spell may take ~30s to wake.)
+
 Estimate the money side of moving abroad. A landing page (`/`) offers two tools:
 
 - **Relocation calculator** (`/relo`) — compares cost of living, exchange rates, and projected monthly savings between two cities.
