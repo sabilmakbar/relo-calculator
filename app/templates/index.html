@@ -78,6 +78,25 @@
 
       .page { max-width: 680px; margin: 0 auto; }
 
+      /* Wide-screen two-column layout: form on the left, results on the right.
+         Only kicks in when there are results AND the viewport is wide enough —
+         otherwise the page stays a single centred 680px column (mobile, tablet,
+         and the empty initial state are unchanged). */
+      .layout { display: block; }
+      @media (min-width: 900px) {
+        .page.wide { max-width: 1120px; }
+        .page.wide .layout {
+          display: grid;
+          grid-template-columns: minmax(360px, 440px) 1fr;
+          gap: 1.25rem;
+          align-items: start;
+        }
+        /* Keep the form visible while scrolling a long results column. */
+        .page.wide .col-input { position: sticky; top: 1.5rem; }
+        .page.wide .col-input .card:last-child,
+        .page.wide .col-results .card:last-child { margin-bottom: 0; }
+      }
+
       #theme-toggle {
         position: fixed;
         top: 1rem;
@@ -120,6 +139,38 @@
         color: var(--muted);
         margin-bottom: 1rem;
       }
+
+      /* Collapsible "Details & calculations" — supporting figures, folded away
+         by default so the savings verdict leads. */
+      .calc-details { margin-bottom: 1.25rem; }
+      .calc-details > summary {
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .85rem 1.1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        font-size: .72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--muted);
+        transition: border-color .15s, color .15s;
+      }
+      .calc-details > summary::-webkit-details-marker { display: none; }
+      .calc-details > summary::before {
+        content: '▸';
+        font-size: .85rem;
+        transition: transform .15s;
+      }
+      .calc-details[open] > summary::before { transform: rotate(90deg); }
+      .calc-details[open] > summary { margin-bottom: 1.25rem; }
+      .calc-details > summary:hover { border-color: var(--accent); color: var(--accent); }
 
       .cities {
         display: grid;
@@ -432,6 +483,8 @@
         margin-top: .4rem;
       }
 
+      /* Two sliders side by side; collapses to one column on small screens. */
+
       .budget-breakdown {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -511,7 +564,7 @@
       })();
     </script>
 
-    <div class="page">
+    <div class="page{% if result %} wide{% endif %}">
 
       <button id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
 
@@ -525,6 +578,8 @@
         <a href="/tax">Take-home estimator</a>
       </nav>
 
+      <div class="layout">
+      <div class="col-input">
       <div class="card">
         <div class="card-title">Locations</div>
 
@@ -626,6 +681,9 @@
           <button class="btn" type="submit">Compare →</button>
         </form>
       </div>
+      </div><!-- /col-input -->
+
+      <div class="col-results">
 
       {% if error %}
         <div class="error-box">{{ error }}</div>
@@ -638,28 +696,6 @@
         {% set fx   = result.fx %}
         {% set same = result.same_country %}
 
-        <!-- Cost of living indices -->
-        <div class="card">
-          <div class="card-title">Cost of living indices</div>
-
-          <div class="stat-row">
-            <span class="stat-label">Daily costs (excl. rent)</span>
-            <span class="badge {{ 'bad' if col.direction == 'higher' else 'good' }}">
-              {{ '▲' if col.direction == 'higher' else '▼' }}
-              {{ '%.1f'|format(col.valuePct|abs) }}% {{ col.direction }}
-            </span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Rent prices</span>
-            <span class="badge {{ 'bad' if rent.direction == 'higher' else 'good' }}">
-              {{ '▲' if rent.direction == 'higher' else '▼' }}
-              {{ '%.1f'|format(rent.valuePct|abs) }}% {{ rent.direction }}
-            </span>
-          </div>
-
-          <div class="fx-hint">Source: Numbeo · {{ result.cities.city_from }} → {{ result.cities.city_to }}</div>
-        </div>
-
         <!-- Currency warning (unknown country) -->
         {% if result.ccy_warning %}
         <div class="error-box" style="background:var(--warn-bg);border-color:#fcd34d;color:var(--warn)">
@@ -671,59 +707,13 @@
         {% if result.fx_failed %}
         <div class="error-box" style="background:var(--warn-bg);border-color:#fcd34d;color:var(--warn)">
           The exchange rate could not be retrieved right now (the FX data source is
-          rate-limiting requests). Cost-of-living differences are shown above, but
-          savings estimates need currency conversion and are temporarily unavailable —
-          please try again in a minute.
+          rate-limiting requests). Savings estimates need currency conversion and are
+          temporarily unavailable — please try again in a minute. The cost-of-living
+          differences are still available under “Details &amp; calculations” below.
         </div>
         {% endif %}
 
-        <!-- FX prediction card — cross-country only -->
-        {% if not same and fx %}
-        {% set cur_home = fx.pair.split('/')[0] %}
-        {% set cur_dest = fx.pair.split('/')[1] %}
-        {% set predicted = fx.forecast or fx.latest %}
-        {% set sc = fx.scale %}
-        {% set unit = '{:,}'.format(sc) ~ ' ' ~ cur_home if sc > 1 else '1 ' ~ cur_home %}
-        <div class="card fx-card">
-          <div class="fx-head">
-            <span class="fx-tag">{{ 'FX rate · spot' if fx.spot_only else 'FX forecast · next month' }}</span>
-            {% if not fx.spot_only %}
-            <span class="fx-trend {{ fx.trend }}">
-              {{ '▲' if fx.trend == 'up' else '▼' if fx.trend == 'down' else '→' }}
-              {{ fx.trend }}
-            </span>
-            {% endif %}
-          </div>
-
-          <div class="fx-rate-line">
-            {{ unit }} = <strong>{{ (predicted * sc)|fxfmt }}</strong> {{ cur_dest }}
-          </div>
-          <div class="fx-sub">
-            1 {{ cur_dest }} = {{ (1 / predicted)|fxfmt }} {{ cur_home }}
-            {% if not fx.spot_only %}· expected range {{ (fx.band_low * sc)|fxfmt }}–{{ (fx.band_high * sc)|fxfmt }} {{ cur_dest }}{% if sc > 1 %} per {{ '{:,}'.format(sc) }} {{ cur_home }}{% endif %}{% endif %}
-          </div>
-
-          {% if not fx.spot_only %}
-          <div class="fx-emas">
-            <span><b>30%</b> EMA-30 <span class="muted">{{ (fx.ema_30 * sc)|fxfmt }}</span></span>
-            <span><b>30%</b> EMA-90 <span class="muted">{{ (fx.ema_90 * sc)|fxfmt if fx.ema_90 else '—' }}</span></span>
-            <span><b>40%</b> EMA-180 <span class="muted">{{ (fx.ema_180 * sc)|fxfmt if fx.ema_180 else '—' }}</span></span>
-            <span>spot <span class="muted">{{ (fx.latest * sc)|fxfmt }}</span></span>
-          </div>
-          <div class="fx-hint">
-            Weighted blend of EMA-30 / 90 / 180 ({{ fx.source }}).
-            Arrow shows the forecast vs the long-term EMA-180.
-          </div>
-          {% else %}
-          <div class="fx-hint">
-            Latest spot rate ({{ fx.source }}) — daily history isn't available for this
-            pair, so there's no EMA forecast. Savings use the current rate.
-          </div>
-          {% endif %}
-        </div>
-        {% endif %}
-
-        <!-- Savings estimate — only when a model was computed (FX available or not needed) -->
+        <!-- ── VERDICT: monthly savings estimate (shown first) ── -->
         {% if result.model %}
         <div class="card">
           <div class="card-title">Monthly savings estimate
@@ -836,7 +826,83 @@
         </div>
         {% endif %}{# result.model #}
 
+        <!-- ── Supporting detail — collapsed by default, open when there's no verdict ── -->
+        <details class="calc-details"{% if not result.model %} open{% endif %}>
+          <summary>Details &amp; calculations</summary>
+
+          <!-- Cost of living indices -->
+          <div class="card">
+            <div class="card-title">Cost of living indices</div>
+
+            <div class="stat-row">
+              <span class="stat-label">Daily costs (excl. rent)</span>
+              <span class="badge {{ 'bad' if col.direction == 'higher' else 'good' }}">
+                {{ '▲' if col.direction == 'higher' else '▼' }}
+                {{ '%.1f'|format(col.valuePct|abs) }}% {{ col.direction }}
+              </span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Rent prices</span>
+              <span class="badge {{ 'bad' if rent.direction == 'higher' else 'good' }}">
+                {{ '▲' if rent.direction == 'higher' else '▼' }}
+                {{ '%.1f'|format(rent.valuePct|abs) }}% {{ rent.direction }}
+              </span>
+            </div>
+
+            <div class="fx-hint">Source: Numbeo · {{ result.cities.city_from }} → {{ result.cities.city_to }}</div>
+          </div>
+
+          <!-- FX prediction card — cross-country only -->
+          {% if not same and fx %}
+          {% set cur_home = fx.pair.split('/')[0] %}
+          {% set cur_dest = fx.pair.split('/')[1] %}
+          {% set predicted = fx.forecast or fx.latest %}
+          {% set sc = fx.scale %}
+          {% set unit = '{:,}'.format(sc) ~ ' ' ~ cur_home if sc > 1 else '1 ' ~ cur_home %}
+          <div class="card fx-card">
+            <div class="fx-head">
+              <span class="fx-tag">{{ 'FX rate · spot' if fx.spot_only else 'FX forecast · next month' }}</span>
+              {% if not fx.spot_only %}
+              <span class="fx-trend {{ fx.trend }}">
+                {{ '▲' if fx.trend == 'up' else '▼' if fx.trend == 'down' else '→' }}
+                {{ fx.trend }}
+              </span>
+              {% endif %}
+            </div>
+
+            <div class="fx-rate-line">
+              {{ unit }} = <strong>{{ (predicted * sc)|fxfmt }}</strong> {{ cur_dest }}
+            </div>
+            <div class="fx-sub">
+              1 {{ cur_dest }} = {{ (1 / predicted)|fxfmt }} {{ cur_home }}
+              {% if not fx.spot_only %}· expected range {{ (fx.band_low * sc)|fxfmt }}–{{ (fx.band_high * sc)|fxfmt }} {{ cur_dest }}{% if sc > 1 %} per {{ '{:,}'.format(sc) }} {{ cur_home }}{% endif %}{% endif %}
+            </div>
+
+            {% if not fx.spot_only %}
+            <div class="fx-emas">
+              <span><b>30%</b> EMA-30 <span class="muted">{{ (fx.ema_30 * sc)|fxfmt }}</span></span>
+              <span><b>30%</b> EMA-90 <span class="muted">{{ (fx.ema_90 * sc)|fxfmt if fx.ema_90 else '—' }}</span></span>
+              <span><b>40%</b> EMA-180 <span class="muted">{{ (fx.ema_180 * sc)|fxfmt if fx.ema_180 else '—' }}</span></span>
+              <span>spot <span class="muted">{{ (fx.latest * sc)|fxfmt }}</span></span>
+            </div>
+            <div class="fx-hint">
+              Weighted blend of EMA-30 / 90 / 180 ({{ fx.source }}).
+              Arrow shows the forecast vs the long-term EMA-180.
+            </div>
+            {% else %}
+            <div class="fx-hint">
+              Latest spot rate ({{ fx.source }}) — daily history isn't available for this
+              pair, so there's no EMA forecast. Savings use the current rate.
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </details>
+
       {% endif %}
+
+      </div><!-- /col-results -->
+      </div><!-- /layout -->
 
       <footer class="site-footer">
         Made by
