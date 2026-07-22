@@ -34,4 +34,4 @@ Latest run — **152 tests, 100% line coverage**, spanning four layers:
 
 ## Security
 
-See [SECURITY_TEST.md](../SECURITY_TEST.md) for the security review — findings rated by CVSS band and mapped to the OWASP Top 10. The dependency audit is clean after upgrading `python-multipart` / `starlette` / `idna` / `python-dotenv` (14 CVEs resolved); `pip-audit` is wired into the dev group to keep it that way.
+See [SECURITY_TEST.md](SECURITY_TEST.md) for the security review — findings rated by CVSS band and mapped to the OWASP Top 10. The dependency audit is clean after upgrading `python-multipart` / `starlette` / `idna` / `python-dotenv` (14 CVEs resolved); `pip-audit` is wired into the dev group to keep it that way.

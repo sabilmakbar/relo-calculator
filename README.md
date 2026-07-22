@@ -34,7 +34,7 @@ docker run -p 8000:8000 relo-calculator
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | App flow, the savings model, FX prediction (EMA blend + fallback chain), budget weights, the tax tool, data files, limitations |
 | [docs/TESTING.md](docs/TESTING.md) | Test layers, coverage, how to run + `pip-audit` |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Free-tier hosting options, `$PORT` / health-check notes |
-| [SECURITY_TEST.md](SECURITY_TEST.md) | Security review — findings by CVSS band, mapped to OWASP Top 10 |
+| [docs/SECURITY_TEST.md](docs/SECURITY_TEST.md) | Security review — findings by CVSS band, mapped to OWASP Top 10 |
 
 ## Tests
 
