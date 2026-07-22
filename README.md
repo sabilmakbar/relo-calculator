@@ -1,13 +1,3 @@
----
-title: Relocation Finance Tools
-emoji: 🌍
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 8000
-pinned: false
----
-
 # Relocation Finance Tools
 
 Estimate the money side of moving abroad. A landing page (`/`) offers two tools:

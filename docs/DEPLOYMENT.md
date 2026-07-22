@@ -16,7 +16,7 @@ Genuinely free, no-credit-card options for a Docker FastAPI app:
 | Platform | Free tier | Sleep | Notes |
 |---|---|---|---|
 | **Render** | 750 hrs/mo, no CC | 15 min idle → ~30–60s cold start | Easiest: connect GitHub, auto-detects the Dockerfile |
-| **Hugging Face Spaces** | 2 vCPU / 16 GB, no CC | Sleeps after long idle | Docker Space; needs `app_port: 8000` in the Space README; endpoints are public |
+| **Hugging Face Spaces** | 2 vCPU / 16 GB, no CC | Sleeps after long idle | Docker Space; the `sync-to-huggingface` Action mirrors the repo and injects the Space config (`sdk`/`app_port`) — set an `HF_TOKEN` secret to enable it; endpoints are public |
 | **Google Cloud Run** | 2M req/mo, scale-to-zero | Scale-to-zero cold start | Best performance, but **requires** a card on file |
 
 Avoid for "free": **Fly.io / Heroku** (no free tier), **Railway** (credit-based), **Koyeb** (free Starter tier removed after the Feb 2026 Mistral acquisition — $29/mo entry).

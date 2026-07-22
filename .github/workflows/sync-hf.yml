@@ -1,0 +1,52 @@
+name: sync-to-huggingface
+
+# Mirrors the repo to the Hugging Face Space on every push to main, injecting the
+# Space config front matter (from .github/hf-space-header.md) at the top of the
+# README on the HF copy ONLY — so GitHub's README stays clean while HF still gets
+# the sdk/app_port config it needs.
+#
+# Setup: add a Hugging Face *write* token as the HF_TOKEN repo secret
+# (Settings → Secrets and variables → Actions → Secrets). Space owner/name and
+# username default to sabilmakbar/relo-calculator; override with repo variables
+# HF_SPACE ("owner/space") and HF_USERNAME if they ever change.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so the force-push to HF is complete
+
+      - name: Sync to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE || 'sabilmakbar/relo-calculator' }}
+          HF_USERNAME: ${{ vars.HF_USERNAME || 'sabilmakbar' }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN not set — add it as a repo secret to enable HF sync. Skipping."
+            exit 0
+          fi
+
+          # Prepend the Space front matter to README.md (HF needs it on line 1).
+          # This edit lives only in the runner's checkout — it's never pushed back
+          # to GitHub, so the GitHub README stays free of the YAML block.
+          tmp=$(mktemp)
+          { cat .github/hf-space-header.md; echo; cat README.md; } > "$tmp"
+          mv "$tmp" README.md
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore: inject HF Space config for deploy" || echo "nothing to commit"
+
+          # Force-push history + injected header to the Space's main branch.
+          git push --force \
+            "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}.git" \
+            HEAD:main
