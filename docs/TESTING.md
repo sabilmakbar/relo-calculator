@@ -12,7 +12,7 @@ uv run pip-audit             # scan dependencies for known CVEs
 
 ## Layers & coverage
 
-Latest run — **134 tests, 93% line coverage**, spanning four layers:
+Latest run — **152 tests, 100% line coverage**, spanning four layers:
 
 | Layer | File | Focus |
 |---|---|---|
@@ -25,12 +25,13 @@ Latest run — **134 tests, 93% line coverage**, spanning four layers:
 | Module | Coverage |
 |---|---|
 | `app/currencies.py` | 100% |
-| `app/fx.py` | 96% |
-| `app/model.py` | 96% |
-| `app/data_sources.py` | 96% |
-| `app/main.py` | ~86% (uncovered: rare HTTP error branches) |
-| **Total** | **93%** |
+| `app/tax.py` | 100% |
+| `app/fx.py` | 100% |
+| `app/model.py` | 100% |
+| `app/data_sources.py` | 100% |
+| `app/main.py` | 100% |
+| **Total** | **100%** |
 
 ## Security
 
-See [SECURITY_TEST.md](../SECURITY_TEST.md) for the security review — findings rated by CVSS band and mapped to the OWASP Top 10. The dependency audit is clean after upgrading `python-multipart` / `starlette` / `idna` / `python-dotenv` (14 CVEs resolved); `pip-audit` is wired into the dev group to keep it that way.
+See [SECURITY_TEST.md](SECURITY_TEST.md) for the security review — findings rated by CVSS band and mapped to the OWASP Top 10. The dependency audit is clean after upgrading `python-multipart` / `starlette` / `idna` / `python-dotenv` (14 CVEs resolved); `pip-audit` is wired into the dev group to keep it that way.

@@ -153,3 +153,52 @@ async def test_index_miss_falls_through_to_scrape(monkeypatch, numbeo_html):
     out = await get_percentage_diff("Malaysia", "Penang", "Singapore", "Singapore")
     assert out["col_excl_rent"] == {"valuePct": 134.5, "direction": "higher"}
     assert session.compare_calls == 1
+
+
+# ── coverage: fallback / error branches ───────────────────────────
+
+def test_load_index_missing_file_returns_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr(ds, "_INDEX_PATH", tmp_path / "does_not_exist.json")
+    assert ds._load_index() == {}
+
+
+def test_new_session_returns_impersonating_session():
+    from curl_cffi.requests import AsyncSession
+    assert isinstance(ds._new_session(), AsyncSession)
+
+
+async def test_warmup_failure_is_ignored(monkeypatch, numbeo_html):
+    """A failed cookie warm-up must not abort the real request."""
+    class _WarmupFails:
+        compare_calls = 0
+        async def __aenter__(self): return self
+        async def __aexit__(self, *exc): return False
+        async def get(self, url, params=None, **kwargs):
+            if url == HOME_URL:
+                raise RuntimeError("warm-up boom")
+            type(self).compare_calls += 1
+            return _FakeResp(200, numbeo_html)
+    monkeypatch.setattr(ds, "_new_session", lambda: _WarmupFails())
+    out = await get_percentage_diff("Malaysia", "Kuala Lumpur", "Singapore", "Singapore")
+    assert out["col_excl_rent"] == {"valuePct": 134.5, "direction": "higher"}
+
+
+async def test_row_without_td_is_skipped(monkeypatch):
+    html = """<table class="table_indices_diff">
+      <tr><th>Index</th><th>Difference</th></tr>
+      <tr><td>Cost of Living in B is 10.0% higher than in A</td></tr>
+      <tr><td>Rent Prices in B are 20.0% higher than in A</td></tr>
+    </table>"""
+    _install(monkeypatch, _FakeResp(200, html))
+    out = await get_percentage_diff("A", "A", "B", "B")
+    assert out["col_excl_rent"]["valuePct"] == 10.0
+    assert out["rent"]["valuePct"] == 20.0
+
+
+async def test_table_without_col_or_rent_rows_raises(monkeypatch):
+    html = """<table class="table_indices_diff">
+      <tr><td>Some unrelated row</td></tr>
+    </table>"""
+    _install(monkeypatch, _FakeResp(200, html))
+    with pytest.raises(RuntimeError, match="Unable to extract"):
+        await get_percentage_diff("A", "A", "B", "B")

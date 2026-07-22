@@ -214,3 +214,28 @@ async def test_trend_up_when_forecast_above_ema180(make_yahoo_payload):
     )
     out = await fetch_fx_ema("MYR", "SGD")
     assert out["trend"] == "up"
+
+
+async def _noop_sleep(_s):
+    return None
+
+
+@respx.mock
+async def test_request_chart_network_error_raises(monkeypatch):
+    """Yahoo network errors (httpx.RequestError) retry, then raise FxUnavailable."""
+    from app.fx import _request_chart
+    monkeypatch.setattr("app.fx.asyncio.sleep", _noop_sleep)
+    respx.get("https://fc.yahoo.com").mock(return_value=httpx.Response(200))
+    respx.get(url__regex=r"https://query[12]\.finance\.yahoo\.com/.*").mock(
+        side_effect=httpx.ConnectError("connection refused")
+    )
+    with pytest.raises(FxUnavailable):
+        await _request_chart("MYRSGD=X", max_attempts=2)
+
+
+async def test_request_spot_returns_cached_without_network():
+    """A warm spot-cache entry is served directly, no HTTP call."""
+    from app.fx import _request_spot, _spot_cache_put
+    _spot_cache_put("myr", "sgd", 0.3125)
+    # No respx mock installed → any real HTTP call would fail; a cache hit won't.
+    assert await _request_spot("MYR", "SGD") == 0.3125
